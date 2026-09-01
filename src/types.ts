@@ -52,6 +52,16 @@ export interface TournamentOutput {
   relatedTournaments?: RelatedTournament[];
 }
 
+export interface TournamentPlayer {
+  pdga_id: number | null;
+  name: string;
+}
+
+export interface TournamentWithPlayers extends TournamentOutput {
+  event_id: number;
+  our_players: TournamentPlayer[];
+}
+
 export interface Rating {
   firstName: string;
   lastName: string;

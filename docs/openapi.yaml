@@ -101,6 +101,25 @@ paths:
                   $ref: '#/components/schemas/Tournament'
         '500':
           $ref: '#/components/responses/ServerError'
+  /tournaments/on-tour:
+    get:
+      tags: [Tournaments]
+      summary: Return tournaments with Syndikat players
+      responses:
+        '200':
+          description: Tournaments containing one or more Syndikat players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentWithPlayers'
+        '502':
+          description: The official tournament source is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteError'
   /tournaments/route:
     post:
       tags: [Tournaments]
@@ -457,6 +476,22 @@ components:
             properties:
               id: { type: integer }
               round: { type: string }
+    TournamentWithPlayers:
+      allOf:
+        - $ref: '#/components/schemas/Tournament'
+        - type: object
+          required: [our_players]
+          properties:
+            our_players:
+              type: array
+              items:
+                $ref: '#/components/schemas/TournamentPlayer'
+    TournamentPlayer:
+      type: object
+      required: [pdga_id, name]
+      properties:
+        pdga_id: { type: [integer, 'null'], minimum: 0 }
+        name: { type: string }
     RouteRequest:
       type: object
       required: [origin, destination]

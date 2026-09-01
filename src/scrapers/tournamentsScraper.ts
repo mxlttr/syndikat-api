@@ -1,16 +1,20 @@
 import type { NextFunction, Request, Response } from 'express';
 import { getCache, setCache } from '../cache';
 import env from '../env';
-import { getJson } from '../http';
+import { getJson, getText } from '../http';
 import { normalizeTournamentLocations } from '../services/locationService.js';
 import type {
   MetrixTournament,
   OfficialTournament,
   RelatedTournament,
   TournamentOutput,
+  TournamentPlayer,
+  TournamentWithPlayers,
 } from '../types.js';
 
 const isProduction = env.NODE_ENV === 'production';
+const ON_TOUR_CACHE_KEY = 'tournaments:on-tour';
+const ON_TOUR_CONCURRENCY = 5;
 
 export function getTournaments<T>(type: string, callback: () => Promise<T>) {
   return async (_: Request, res: Response, next: NextFunction) => {
@@ -144,4 +148,168 @@ function removeDuplicates(tournaments: TournamentOutput[]): TournamentOutput[] {
     });
 
   return result;
+}
+
+export class UpstreamTournamentError extends Error {
+  status = 502;
+
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'UpstreamTournamentError';
+  }
+}
+
+export interface OnTourScrapeResult {
+  tournaments: TournamentWithPlayers[];
+  complete: boolean;
+}
+
+export interface OnTourScraperDependencies {
+  getTournamentIndex: () => Promise<OfficialTournament[]>;
+  getPlayerList: (tournament: OfficialTournament) => Promise<string>;
+  warn: (message: string) => void;
+}
+
+function playerListUrl(eventId: number) {
+  return `${env.OFFICIAL_URL}?p=events&sp=list-players&id=${eventId}`;
+}
+
+const onTourScraperDependencies: OnTourScraperDependencies = {
+  getTournamentIndex: async () => (await getOfficialTournaments()).officialTournaments,
+  getPlayerList: (tournament) => getText(playerListUrl(tournament.event_id)),
+  warn: console.warn,
+};
+
+function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
+  const playerRows =
+    tournamentData
+      .match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi)
+      ?.filter((player) => player.includes('Syndikat')) ?? [];
+
+  return playerRows.flatMap((player) => {
+    const cells = [...player.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
+    if (cells.length <= 9) return [];
+
+    const cleanCell = (cell: string) => cell.replace(/<[^>]+>/g, '').trim();
+    const club = cleanCell(cells[5][1]);
+    if (!club.includes('Syndikat')) return [];
+
+    const pdgaId = Number(cleanCell(cells[9][1]));
+    return [{ pdga_id: pdgaId || null, name: cleanCell(cells[4][1]) }];
+  });
+}
+
+function tournamentWithPlayers(
+  tournament: OfficialTournament,
+  tournamentData: string,
+): TournamentWithPlayers {
+  return {
+    title: tournament.event_name || 'Kein Name vergeben',
+    event_id: tournament.event_id,
+    link: `${env.OFFICIAL_URL}?p=events&sp=view&id=${tournament.event_id}`,
+    location: tournament.location,
+    coords: {
+      lat: Number.parseFloat(tournament.location_latitude) || null,
+      lng: Number.parseFloat(tournament.location_longitude) || null,
+    },
+    dates: {
+      startTournament: tournament.timestamp_start
+        ? new Date(tournament.timestamp_start * 1000)
+        : null,
+      endTournament: tournament.timestamp_end ? new Date(tournament.timestamp_end * 1000) : null,
+      startRegistration: tournament.timestamp_registration_phase
+        ? new Date(tournament.timestamp_registration_phase * 1000)
+        : null,
+    },
+    spots: {
+      overall: tournament.spots,
+      used: tournament.num_attendees,
+    },
+    our_players: playersFromTournamentList(tournamentData),
+  };
+}
+
+/** Fetch Syndikat players from all live tournaments without caching partial upstream results. */
+export async function fetchPlayersOnTour(
+  dependencies: OnTourScraperDependencies = onTourScraperDependencies,
+): Promise<OnTourScrapeResult> {
+  let officialTournaments: OfficialTournament[];
+  try {
+    officialTournaments = await dependencies.getTournamentIndex();
+  } catch (error) {
+    throw new UpstreamTournamentError('Tournament index is temporarily unavailable', {
+      cause: error,
+    });
+  }
+
+  const liveTournaments = officialTournaments.filter((tournament) => tournament.num_attendees > 0);
+  const settled: PromiseSettledResult<TournamentWithPlayers>[] = [];
+
+  for (let start = 0; start < liveTournaments.length; start += ON_TOUR_CONCURRENCY) {
+    const batch = liveTournaments.slice(start, start + ON_TOUR_CONCURRENCY);
+    settled.push(
+      ...(await Promise.allSettled(
+        batch.map(async (tournament) =>
+          tournamentWithPlayers(tournament, await dependencies.getPlayerList(tournament)),
+        ),
+      )),
+    );
+  }
+
+  const rejected = settled.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  );
+  if (rejected.length > 0) {
+    const failedIds = settled.flatMap((result, index) =>
+      result.status === 'rejected' ? [liveTournaments[index].event_id] : [],
+    );
+    dependencies.warn(`Unable to fetch player lists for tournament IDs: ${failedIds.join(', ')}`);
+  }
+  if (settled.length > 0 && rejected.length === settled.length) {
+    throw new UpstreamTournamentError('Tournament player lists are temporarily unavailable');
+  }
+
+  return {
+    tournaments: settled
+      .filter(
+        (result): result is PromiseFulfilledResult<TournamentWithPlayers> =>
+          result.status === 'fulfilled',
+      )
+      .map((result) => result.value)
+      .filter((tournament) => tournament.our_players.length > 0),
+    complete: rejected.length === 0,
+  };
+}
+
+export interface OnTourHandlerOptions {
+  production?: boolean;
+  scrape?: () => Promise<OnTourScrapeResult>;
+  getCached?: () => Promise<TournamentWithPlayers[] | null>;
+  setCached?: (value: TournamentWithPlayers[]) => Promise<void>;
+}
+
+export function getPlayersOnTour(options: OnTourHandlerOptions = {}) {
+  const production = options.production ?? isProduction;
+  const scrape = options.scrape ?? fetchPlayersOnTour;
+  const getCached =
+    options.getCached ?? (() => getCache<TournamentWithPlayers[]>(ON_TOUR_CACHE_KEY));
+  const setCached = options.setCached ?? ((value) => setCache(ON_TOUR_CACHE_KEY, value));
+
+  return async (_: Request, res: Response, next: NextFunction) => {
+    try {
+      if (production) {
+        const cachedData = await getCached();
+        if (cachedData) {
+          res.send(cachedData);
+          return;
+        }
+      }
+
+      const result = await scrape();
+      if (production && result.complete) await setCached(result.tournaments);
+      res.send(result.tournaments);
+    } catch (err) {
+      next(err);
+    }
+  };
 }
