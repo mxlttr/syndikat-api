@@ -1,6 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import express, { type Response, Router } from 'express';
-import { databaseConfigured, databasePool } from '../database';
+import { databaseAvailable, databasePool } from '../database';
 import env from '../env';
 
 const router = Router();
@@ -37,7 +37,7 @@ function tokenMatches(token: string, tokenHash: string) {
 }
 
 function configured() {
-  return databaseConfigured() && Boolean(env.SESSION_SECRET && env.TRAINING_SIGNUP_PASSWORD);
+  return databaseAvailable() && Boolean(env.SESSION_SECRET && env.TRAINING_SIGNUP_PASSWORD);
 }
 
 /**
