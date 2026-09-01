@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import env from './env';
 
-// // Create Redis client from HEROKU REDIS_URL
+// Create Redis client from HEROKU REDIS_URL
 // If REDIS_URL is not set, defaults to localhost
 
 const isProduction = env.NODE_ENV === 'production';
@@ -9,12 +9,15 @@ if (isProduction && !env.REDIS_URL) {
   throw new Error('REDIS_URL not configured for production');
 }
 
-const redis = env.REDIS_URL
-  ? new Redis(
-      env.REDIS_URL as string,
-      env.REDIS_URL.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {},
-    )
-  : null;
+// Redis is a production cache. Keep local development independent from any
+// inherited REDIS_URL (for example, one exported by a deployment shell).
+const redis =
+  isProduction && env.REDIS_URL
+    ? new Redis(
+        env.REDIS_URL as string,
+        env.REDIS_URL.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {},
+      )
+    : null;
 
 const DEFAULT_EXPIRY = Number(env.CACHE_EXPIRY) || 3600;
 
