@@ -1,3 +1,4 @@
+import { load } from 'cheerio';
 import type { NextFunction, Request, Response } from 'express';
 import { getCache, setCache } from '../cache';
 import env from '../env';
@@ -181,22 +182,30 @@ const onTourScraperDependencies: OnTourScraperDependencies = {
 };
 
 function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
-  const playerRows =
-    tournamentData
-      .match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi)
-      ?.filter((player) => player.includes('Syndikat')) ?? [];
+  const $ = load(tournamentData);
+  const headers = $('#starterlist thead th')
+    .map((_, header) => $(header).text().trim())
+    .get();
+  const playerIndex = headers.indexOf('Spieler');
+  const pdgaIndex = headers.indexOf('PDGA#');
 
-  return playerRows.flatMap((player) => {
-    const cells = [...player.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
-    if (cells.length <= 9) return [];
+  if (playerIndex < 0 || pdgaIndex < 0) return [];
 
-    const cleanCell = (cell: string) => cell.replace(/<[^>]+>/g, '').trim();
-    const club = cleanCell(cells[5][1]);
-    if (!club.includes('Syndikat')) return [];
+  return $('#starterlist tbody tr')
+    .toArray()
+    .flatMap((row) => {
+      const cells = $(row)
+        .find('td')
+        .map((_, cell) => $(cell).text().trim())
+        .get();
+      if (!cells.some((cell) => cell.includes('Syndikat'))) return [];
 
-    const pdgaId = Number(cleanCell(cells[9][1]));
-    return [{ pdga_id: pdgaId || null, name: cleanCell(cells[4][1]) }];
-  });
+      const name = cells[playerIndex];
+      if (!name) return [];
+
+      const pdgaId = Number(cells[pdgaIndex]);
+      return [{ pdga_id: pdgaId || null, name }];
+    });
 }
 
 function tournamentWithPlayers(
