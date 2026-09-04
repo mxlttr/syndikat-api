@@ -5,6 +5,9 @@ info:
   description: |
     Website-facing API for syndikat.golf. This contract is maintained manually alongside Express routes.
     Third-party scraper data can change independently; clients must tolerate omitted optional fields.
+  contact:
+    name: Syndikat Disc Golf
+    url: https://syndikat.golf
 servers:
   - url: https://api.syndikat.golf
     description: Production
@@ -23,6 +26,8 @@ paths:
     get:
       tags: [Health]
       summary: Return a basic service status
+      description: Reports that the API process is reachable.
+      operationId: getServiceStatus
       responses:
         '200':
           description: Service is running
@@ -34,6 +39,8 @@ paths:
     get:
       tags: [Health]
       summary: Return service and Redis status
+      description: Reports the API and Redis health state.
+      operationId: getHealth
       responses:
         '200':
           description: Health snapshot
@@ -45,6 +52,8 @@ paths:
     get:
       tags: [Community]
       summary: Proxy the configured bag-tag ranking
+      description: Returns the current ranking from the configured bag-tag service.
+      operationId: getBagTagRanking
       responses:
         '200':
           description: Ranking data supplied by the configured bag-tag service
@@ -60,6 +69,8 @@ paths:
     get:
       tags: [Community]
       summary: Return scraped player ratings
+      description: Returns the latest player ratings collected from the source site.
+      operationId: getPlayerRatings
       responses:
         '200':
           description: Ratings
@@ -75,6 +86,8 @@ paths:
     get:
       tags: [Tournaments]
       summary: Return official upcoming tournaments
+      description: Returns upcoming tournaments from the official source.
+      operationId: getUpcomingTournaments
       responses:
         '200':
           description: Tournament list
@@ -90,6 +103,8 @@ paths:
     get:
       tags: [Tournaments]
       summary: Return upcoming Disc Golf Metrix tournaments
+      description: Returns upcoming tournaments listed by Disc Golf Metrix.
+      operationId: getMetrixTournaments
       responses:
         '200':
           description: Tournament list
@@ -105,6 +120,8 @@ paths:
     get:
       tags: [Tournaments]
       summary: Return tournaments with Syndikat players
+      description: Returns upcoming tournaments that include one or more Syndikat players.
+      operationId: getOnTourTournaments
       responses:
         '200':
           description: Tournaments containing one or more Syndikat players
@@ -125,6 +142,7 @@ paths:
       tags: [Tournaments]
       summary: Plan a driving route to a tournament
       description: The origin is geocoded in Germany. A Deutsche Bahn URL is included only when station lookup is configured.
+      operationId: planTournamentRoute
       requestBody:
         required: true
         content:
@@ -160,6 +178,8 @@ paths:
     get:
       tags: [Products]
       summary: Return recent products from supported Shopify feeds
+      description: Returns recent products from every supported Shopify feed.
+      operationId: getProductFeed
       responses:
         '200':
           description: Products ordered newest first
@@ -179,6 +199,7 @@ paths:
         The response uses `text/event-stream`. A `start` event is followed by zero or more
         `store`/`store-error` events and one `end` event. The server sends comment heartbeats.
         Closing the connection cancels outstanding store requests.
+      operationId: streamProductSearch
       parameters:
         - $ref: '#/components/parameters/ProductQuery'
       responses:
@@ -213,6 +234,8 @@ paths:
     get:
       tags: [Products]
       summary: Search a single supported store
+      description: Searches one supported store for products matching the query.
+      operationId: searchStoreProducts
       parameters:
         - name: type
           in: path
@@ -239,6 +262,8 @@ paths:
     get:
       tags: [Training]
       summary: Return the next Friday training date and whether signup is open
+      description: Returns the next training date and its current signup availability.
+      operationId: getTrainingStatus
       responses:
         '200':
           description: Signup status, calculated in the Europe/Berlin timezone
@@ -252,6 +277,8 @@ paths:
     get:
       tags: [Training]
       summary: List participants for a training date
+      description: Returns participants registered for the requested training date.
+      operationId: listTrainingParticipants
       parameters:
         - name: date
           in: query
@@ -282,6 +309,7 @@ paths:
       tags: [Training]
       summary: Sign up for the next Friday training
       description: Requires the current signup password. Save the returned removal token locally; it is not retrievable later.
+      operationId: createTrainingParticipant
       requestBody:
         required: true
         content:
@@ -339,6 +367,8 @@ paths:
     delete:
       tags: [Training]
       summary: Remove a participant
+      description: Removes a participant using the removal token returned at signup.
+      operationId: deleteTrainingParticipant
       security:
         - RemovalToken: []
       parameters:
@@ -417,7 +447,7 @@ components:
       type: object
       required: [Rank, Name, Motiv]
       properties:
-        Rank: { type: string, description: Display rank, including medal emoji for the top three places. }
+        Rank: { type: string, description: "Display rank, including medal emoji for the top three places." }
         Name: { type: string, description: Player name; may be empty for an unassigned tag. }
         Motiv: { type: string, description: Nickname or tag motif; may be empty. }
     Rating:
