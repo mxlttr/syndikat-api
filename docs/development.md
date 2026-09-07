@@ -37,4 +37,4 @@ npm run biome:check
 npm run openapi:lint
 ```
 
-For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [maxgreive/syndikat-web](https://github.com/maxgreive/syndikat-web).
+For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web).

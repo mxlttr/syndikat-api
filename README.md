@@ -31,4 +31,4 @@ npm run openapi:lint
 npm start
 ```
 
-When changing a browser-consumed route, update `docs/openapi.yaml` and the corresponding usage in [maxgreive/syndikat-web](https://github.com/maxgreive/syndikat-web) in the same review.
+When changing a browser-consumed route, update `docs/openapi.yaml` and the corresponding usage in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web) in the same review.
