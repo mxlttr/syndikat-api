@@ -53,6 +53,7 @@ export interface TournamentOutput {
 }
 
 export interface TournamentPlayer {
+  waitlisted: boolean;
   pdga_id: number | null;
   name: string;
 }

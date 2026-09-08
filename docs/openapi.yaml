@@ -518,8 +518,9 @@ components:
                 $ref: '#/components/schemas/TournamentPlayer'
     TournamentPlayer:
       type: object
-      required: [pdga_id, name]
+      required: [pdga_id, name, waitlisted]
       properties:
+        waitlisted: { type: boolean, description: True for players on the waiting list; false for starters. }
         pdga_id: { type: [integer, 'null'], minimum: 0 }
         name: { type: string }
     RouteRequest:

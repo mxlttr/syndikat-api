@@ -14,7 +14,7 @@ import type {
 } from '../types.js';
 
 const isProduction = env.NODE_ENV === 'production';
-const ON_TOUR_CACHE_KEY = 'tournaments:on-tour';
+const ON_TOUR_CACHE_KEY = 'tournaments:on-tour:v2';
 const ON_TOUR_CONCURRENCY = 5;
 
 export function getTournaments<T>(type: string, callback: () => Promise<T>) {
@@ -183,29 +183,34 @@ const onTourScraperDependencies: OnTourScraperDependencies = {
 
 function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
   const $ = load(tournamentData);
-  const headers = $('#starterlist thead th')
-    .map((_, header) => $(header).text().trim())
-    .get();
-  const playerIndex = headers.indexOf('Spieler');
-  const pdgaIndex = headers.indexOf('PDGA#');
+  return ['starterlist', 'waitinglist'].flatMap((tableId) => {
+    const table = $(`#${tableId}`);
+    const headers = table
+      .find('thead th')
+      .map((_, header) => $(header).text().trim())
+      .get();
+    const playerIndex = headers.indexOf('Spieler');
+    const pdgaIndex = headers.indexOf('PDGA#');
 
-  if (playerIndex < 0 || pdgaIndex < 0) return [];
+    if (playerIndex < 0 || pdgaIndex < 0) return [];
 
-  return $('#starterlist tbody tr')
-    .toArray()
-    .flatMap((row) => {
-      const cells = $(row)
-        .find('td')
-        .map((_, cell) => $(cell).text().trim())
-        .get();
-      if (!cells.some((cell) => cell.includes('Syndikat'))) return [];
+    return table
+      .find('tbody tr')
+      .toArray()
+      .flatMap((row) => {
+        const cells = $(row)
+          .find('td')
+          .map((_, cell) => $(cell).text().trim())
+          .get();
+        if (!cells.some((cell) => cell.includes('Syndikat'))) return [];
 
-      const name = cells[playerIndex];
-      if (!name) return [];
+        const name = cells[playerIndex];
+        if (!name) return [];
 
-      const pdgaId = Number(cells[pdgaIndex]);
-      return [{ pdga_id: pdgaId || null, name }];
-    });
+        const pdgaId = Number(cells[pdgaIndex]);
+        return [{ pdga_id: pdgaId || null, name, waitlisted: tableId === 'waitinglist' }];
+      });
+  });
 }
 
 function tournamentWithPlayers(
