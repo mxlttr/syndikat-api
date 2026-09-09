@@ -2,6 +2,7 @@ import axios from 'axios';
 import express, { Router } from 'express';
 import Stripe from 'stripe';
 import env from '../env';
+import { trackMembershipConversion } from '../services/membershipAnalyticsService';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2024-06-20',
 });
 
-router.post('/', express.raw({ type: 'application/json' }), (request, response) => {
+router.post('/', express.raw({ type: 'application/json' }), async (request, response) => {
   const sig = request.headers['stripe-signature'];
   if (!sig || !endpointSecret) {
     response.status(400).end();
@@ -27,7 +28,18 @@ router.post('/', express.raw({ type: 'application/json' }), (request, response) 
     return;
   }
 
+  try {
+    await trackMembershipConversion(event);
+  } catch {
+    console.error('Membership analytics delivery failed; Stripe should retry');
+    response.sendStatus(503);
+    return;
+  }
+
   switch (event.type) {
+    case 'checkout.session.completed':
+    case 'checkout.session.async_payment_succeeded':
+      break;
     case 'payment_intent.succeeded': {
       const intent = event.data.object as Stripe.PaymentIntent;
       triggerDiscordNotification(intent);

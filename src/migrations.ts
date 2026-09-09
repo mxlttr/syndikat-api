@@ -15,7 +15,7 @@ export async function runDatabaseMigrations(pool: Pool) {
     await client.query(
       'create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())',
     );
-    for (const directory of ['training']) {
+    for (const directory of ['training', 'analytics']) {
       const directoryPath = path.join(root, directory);
       const files = (await readdir(directoryPath)).filter((file) => file.endsWith('.sql')).sort();
       for (const file of files) {
