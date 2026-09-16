@@ -68,18 +68,34 @@ paths:
   /ratings:
     get:
       tags: [Community]
-      summary: Return scraped player ratings
-      description: Returns the latest player ratings collected from the source site.
+      summary: Return paginated player ratings
+      description: Returns the latest player ratings collected from the source site. Results can be filtered and paginated with query parameters.
       operationId: getPlayerRatings
+      parameters:
+        - name: club
+          in: query
+          description: Case-insensitive club substring filter.
+          schema: { type: string }
+        - name: division
+          in: query
+          description: Exact division filter.
+          schema: { type: string }
+        - name: search
+          in: query
+          description: Case-insensitive search across player name and club.
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
       responses:
         '200':
           description: Ratings
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Rating'
+              schema: { $ref: '#/components/schemas/PaginatedRatings' }
         '500':
           $ref: '#/components/responses/ServerError'
   /ratings/{club}:
@@ -518,6 +534,19 @@ components:
         divisionRank: { type: integer }
         link: { type: string }
         club: { type: string }
+    PaginatedRatings:
+      type: object
+      required: [items, total, page, pageSize, divisions]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Rating' }
+        total: { type: integer, minimum: 0 }
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        divisions:
+          type: array
+          items: { type: string }
     Player:
       type: object
       required: [gtNumber, name, club, tournaments, historicRatings]

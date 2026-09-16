@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { filterRatingsByClub } from '../src/services/ratingsService';
+import { filterRatings, filterRatingsByClub } from '../src/services/ratingsService';
 import type { Rating } from '../src/types';
 
 const ratings = [
@@ -33,4 +33,18 @@ test('club filter accepts full names, abbreviations, case, and whitespace', () =
 test('unknown clubs return no ratings without changing the source list', () => {
   assert.deepEqual(filterRatingsByClub(ratings, 'unknown'), []);
   assert.equal(ratings.length, 3);
+});
+
+test('rating filters combine club, division, and player search', () => {
+  const filtered = filterRatings(
+    [
+      { ...ratings[0], firstName: 'Anna', lastName: 'Müller', division: 'Open' },
+      { ...ratings[0], firstName: 'Bernd', lastName: 'Schmidt', division: 'Master' },
+      { ...ratings[1], firstName: 'Anna', lastName: 'Other', division: 'Open' },
+    ],
+    { club: 'syndikat', division: 'Open', search: 'müller' },
+  );
+
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].firstName, 'Anna');
 });
