@@ -25,6 +25,8 @@ The environment schema currently expects the listed source configuration fields 
 
 ## Dependencies and checks
 
+`GET /ratings` returns all ratings. `GET /ratings/{club}` optionally filters by a URL-encoded club name, for example `/ratings/disc%20golf%20syndikat`. Matching is a case-insensitive substring search with normalized whitespace and equivalent Disc Golf/Discgolf/Disc-Golf/DG spellings. No matches return `[]`; original rankings and division counts are preserved.
+
 - Redis is optional outside production. It enables response caching and contributes to health status.
 - PostgreSQL is optional unless training signup or membership analytics is enabled. Startup applies pending migrations automatically.
 - OpenRouteService is needed for route planning and tournament-location normalization. Deutsche Bahn station lookup is optional.
@@ -85,3 +87,9 @@ Run the focused regression checks with:
 ```sh
 node --import tsx --test tests/membershipAnalytics.test.ts
 ```
+
+The API exposes `GET /players/{id}` for a positive GT number. It returns one player (`gtNumber`, `name`, `club`, `tournaments`). Each tournament contains `tournamentId`, `pdgaEventId`, `name`, `series`, `startDate`, `endDate`, and `rounds`. Dates use `YYYY-MM-DD`. Each round contains `roundNumber`, `rating`, `division`, `holes`, and `inRating`. Tournament and round order follow the source. An empty history returns `tournaments: []`. Invalid IDs return 400; upstream or parsing failures return 500. The website does not yet call this endpoint.
+
+Tournament IDs come from the GT and PDGA results links. Both are nullable positive integers; missing, invalid, and placeholder IDs (including PDGA event 0) become `null`. This replaces the earlier flat `player.rounds` response; consumers should read `player.tournaments` and each tournament’s `rounds`.
+
+Player history tolerates omitted club information (`club: ""`) and missing historical hole counts (`holes: null`). Legacy date ranges are normalized to `YYYY-MM-DD`, and tournament IDs also support `german-tour-online.de/events/results/{id}` links.

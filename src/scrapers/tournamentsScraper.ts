@@ -191,8 +191,9 @@ function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
       .get();
     const playerIndex = headers.indexOf('Spieler');
     const pdgaIndex = headers.indexOf('PDGA#');
+    const gtIndex = headers.indexOf('GT#');
 
-    if (playerIndex < 0 || pdgaIndex < 0) return [];
+    if (playerIndex < 0 || pdgaIndex < 0 || gtIndex < 0) return [];
 
     return table
       .find('tbody tr')
@@ -207,8 +208,9 @@ function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
         const name = cells[playerIndex];
         if (!name) return [];
 
-        const pdgaId = Number(cells[pdgaIndex]);
-        return [{ pdga_id: pdgaId || null, name, waitlisted: tableId === 'waitinglist' }];
+        const pdgaId = Number(cells[pdgaIndex]) || null;
+        const gtId = Number(cells[gtIndex]) || null;
+        return [{ gtId, pdgaId, name, waitlisted: tableId === 'waitinglist' }];
       });
   });
 }

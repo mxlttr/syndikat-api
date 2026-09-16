@@ -82,6 +82,56 @@ paths:
                   $ref: '#/components/schemas/Rating'
         '500':
           $ref: '#/components/responses/ServerError'
+  /ratings/{club}:
+    get:
+      tags: [Community]
+      summary: Return player ratings filtered by club
+      description: Case-insensitive substring match on club names, treating Disc Golf, Discgolf, Disc-Golf, and DG as equivalent. Whitespace is normalized. Empty matches return an empty array. Rankings and division counts remain those of the full ratings list.
+      operationId: getPlayerRatingsByClub
+      parameters:
+        - name: club
+          in: path
+          required: true
+          description: Club name or part of it. URL-encode spaces.
+          schema:
+            type: string
+          example: disc golf syndikat
+      responses:
+        '200':
+          description: Matching ratings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rating'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /players/{id}:
+    get:
+      tags: [Community]
+      summary: Return a player's tournament rounds
+      description: Scrapes the detailed rating view. Dates describe the tournament span, not individual round dates.
+      operationId: getPlayer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Positive GT number within the JavaScript safe integer range.
+          schema:
+            type: string
+            pattern: '^[1-9]\d*$'
+      responses:
+        '200':
+          description: Player with tournaments and their rounds in source order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /tournaments:
     get:
       tags: [Tournaments]
@@ -468,6 +518,50 @@ components:
         divisionRank: { type: integer }
         link: { type: string }
         club: { type: string }
+    Player:
+      type: object
+      required: [gtNumber, name, club, tournaments, historicRatings]
+      properties:
+        gtNumber: { type: integer, minimum: 1 }
+        name: { type: string }
+        club: { type: string }
+        tournaments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerTournament'
+        historicRatings:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoricRating'
+    HistoricRating:
+      type: object
+      required: [date, rating]
+      properties:
+        date: { type: string, format: date }
+        rating: { type: number }
+    PlayerTournament:
+      type: object
+      required: [tournamentId, pdgaEventId, name, series, startDate, endDate, rounds]
+      properties:
+        tournamentId: { type: [integer, 'null'], minimum: 1, description: GT results event ID; null when unavailable. }
+        pdgaEventId: { type: [integer, 'null'], minimum: 1, description: PDGA event ID; null for missing or placeholder links. }
+        name: { type: string }
+        series: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerRound'
+    PlayerRound:
+      type: object
+      required: [roundNumber, rating, division, holes, inRating]
+      properties:
+        roundNumber: { type: integer, minimum: 1 }
+        rating: { type: number }
+        division: { type: string }
+        holes: { type: [integer, 'null'], minimum: 1, description: Null when the source omits the hole count. }
+        inRating: { type: boolean }
     Tournament:
       type: object
       required: [title, link, location, coords, dates]
@@ -518,10 +612,11 @@ components:
                 $ref: '#/components/schemas/TournamentPlayer'
     TournamentPlayer:
       type: object
-      required: [pdga_id, name, waitlisted]
+      required: [gtId, pdgaId, name, waitlisted]
       properties:
         waitlisted: { type: boolean, description: True for players on the waiting list; false for starters. }
-        pdga_id: { type: [integer, 'null'], minimum: 0 }
+        gtId: { type: [integer, 'null'], minimum: 0 }
+        pdgaId: { type: [integer, 'null'], minimum: 0 }
         name: { type: string }
     RouteRequest:
       type: object
