@@ -13,6 +13,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/server.js",
+    "test": "node --import tsx --test tests/*.test.ts",
     "biome:check": "biome check .",
     "biome:fix": "biome check . --write",
     "openapi:lint": "redocly lint docs/openapi.yaml"

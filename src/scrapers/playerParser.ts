@@ -36,9 +36,20 @@ function positiveId(value: string | null): number | null {
 export function parsePlayer(html: string, gtNumber: number): Player {
   const $ = cheerio.load(html);
   const historicRatings: HistoricRating[] = [];
-  const chartScript = $('script').toArray().map((script) => $(script).text()).find((text) => text.includes('labels:') && text.includes('DRating'));
-  const labels = chartScript?.match(/labels:\s*\[([\s\S]*?)\]/)?.[1].match(/['"](\d{4}-\d{2}-\d{2})['"]/g)?.map((value) => value.slice(1, -1)) ?? [];
-  const values = chartScript?.match(/data:\s*\[([\s\S]*?)\]/)?.[1].match(/['"](-?\d+(?:\.\d+)?)['"]/g)?.map((value) => Number(value.slice(1, -1))) ?? [];
+  const chartScript = $('script')
+    .toArray()
+    .map((script) => $(script).text())
+    .find((text) => text.includes('labels:') && text.includes('DRating'));
+  const labels =
+    chartScript
+      ?.match(/labels:\s*\[([\s\S]*?)\]/)?.[1]
+      .match(/['"](\d{4}-\d{2}-\d{2})['"]/g)
+      ?.map((value) => value.slice(1, -1)) ?? [];
+  const values =
+    chartScript
+      ?.match(/data:\s*\[([\s\S]*?)\]/)?.[1]
+      .match(/['"](-?\d+(?:\.\d+)?)['"]/g)
+      ?.map((value) => Number(value.slice(1, -1))) ?? [];
   labels.forEach((date, index) => {
     const rating = values[index];
     if (!Number.isFinite(rating)) return;
