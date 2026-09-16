@@ -54,7 +54,8 @@ export interface TournamentOutput {
 
 export interface TournamentPlayer {
   waitlisted: boolean;
-  pdga_id: number | null;
+  pdgaId: number | null;
+  gtId: number | null;
   name: string;
 }
 
@@ -78,4 +79,35 @@ export interface Rating {
   divisionRank: number;
   link: string;
   club: string;
+}
+
+export interface Round {
+  roundNumber: number;
+  rating: number;
+  division: string;
+  holes: number | null;
+  inRating: boolean;
+}
+
+export interface PlayerTournament {
+  tournamentId: OfficialTournament['event_id'] | null;
+  pdgaEventId: number | null;
+  name: string;
+  series: string;
+  startDate: string;
+  endDate: string;
+  rounds: Round[];
+}
+
+export interface Player {
+  name: string;
+  gtNumber: number;
+  club: string;
+  tournaments: PlayerTournament[];
+  historicRatings: HistoricRating[];
+}
+
+export interface HistoricRating {
+  date: string;
+  rating: number;
 }

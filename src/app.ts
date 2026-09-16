@@ -4,6 +4,7 @@ import express from 'express';
 import env from './env';
 import bagtagRouter from './routes/bagtagsRouter';
 import indexRouter from './routes/indexRouter';
+import playersRouter from './routes/playersRouter';
 import productsRouter from './routes/productsRouter';
 import ratingsRouter from './routes/ratingsRouter';
 import scoresRouter from './routes/scoresRouter';
@@ -78,6 +79,7 @@ app.use('/scores', scoresRouter);
 app.use('/products', productsRouter);
 app.use('/stripe-webhook', stripeRouter);
 app.use('/training', trainingRouter);
+app.use('/players', playersRouter);
 
 app.use((err: Error & { status?: number }, _: Request, res: Response, __: NextFunction) => {
   console.error(err.stack);
