@@ -42,7 +42,6 @@ async function scrapeRatings(): Promise<Rating[]> {
           division: getCell($(columns[5])),
           lastRound: new Date(getCell($(columns[9])).toString().split('.').reverse().join('-')),
           roundCount: getCell($(columns[10]), true),
-          dmRounds: getCell($(columns[11]), true),
           rank: getCell($(columns[0]), true),
           divisionRank: getCell($(columns[1]), true),
           link,

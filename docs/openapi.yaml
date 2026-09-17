@@ -518,7 +518,7 @@ components:
         Motiv: { type: string, description: Nickname or tag motif; may be empty. }
     Rating:
       type: object
-      required: [firstName, lastName, rating, ratingChange, divisionCount, gtNumber, division, lastRound, roundCount, dmRounds, rank, divisionRank, link, club]
+      required: [firstName, lastName, rating, ratingChange, divisionCount, gtNumber, division, lastRound, roundCount, rank, divisionRank, link, club]
       properties:
         firstName: { type: string }
         lastName: { type: string }
@@ -529,7 +529,6 @@ components:
         division: { type: string }
         lastRound: { type: string, format: date-time }
         roundCount: { type: integer }
-        dmRounds: { type: integer }
         rank: { type: integer }
         divisionRank: { type: integer }
         link: { type: string }

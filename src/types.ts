@@ -74,7 +74,6 @@ export interface Rating {
   division: string;
   lastRound: Date;
   roundCount: number;
-  dmRounds: number;
   rank: number;
   divisionRank: number;
   link: string;
