@@ -40,6 +40,11 @@ npm run biome:check
 npm run openapi:lint
 ```
 
+The API does not require PostgreSQL or Redis for the public scraping routes.
+PostgreSQL is needed for training signups and Redis is used for production caching.
+Local service provisioning is intentionally not automated yet; keep service data
+outside the repository and configure the API with the environment variables above.
+
 For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web).
 
 The `/tournaments/on-tour` response includes Syndikat players from both the starter and waiting lists. Each `our_players` entry includes `waitlisted` (boolean); the website lists starters first and groups waiting-list players in parentheses, e.g. “Person 1, Person 2, (Person 3, Person 4)”.
