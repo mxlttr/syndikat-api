@@ -41,7 +41,7 @@ test(
     assert.equal(response.body.status, 'ok');
     assert.equal(response.headers['x-request-id'], 'http-test');
     assert.equal(response.headers['x-content-type-options'], 'nosniff');
-    assert.equal(response.headers['x-ratelimit-limit'], '300');
+    assert.match(response.headers.ratelimit ?? '', /300/);
   },
 );
 
