@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../logger';
 import { getPlayer } from '../scrapers/playersScaper';
 
 const router = Router();
@@ -15,7 +16,7 @@ router.get('/:id', async (req, res) => {
     const data = await getPlayer(id);
     res.json(data);
   } catch (error) {
-    console.error(error);
+    logger.error('Player request failed', { error: String(error) });
     res.status(500).json({ message: 'An error occured' });
   }
 });

@@ -2,6 +2,7 @@ import axios from 'axios';
 import express, { Router } from 'express';
 import Stripe from 'stripe';
 import env from '../env';
+import { logger } from '../logger';
 import { trackMembershipConversion } from '../services/membershipAnalyticsService';
 
 const router = Router();
@@ -23,7 +24,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (request, resp
   try {
     event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
   } catch (err) {
-    console.error('err:', err);
+    logger.error('Stripe webhook signature validation failed', { error: String(err) });
     response.status(400).end();
     return;
   }
@@ -31,7 +32,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (request, resp
   try {
     await trackMembershipConversion(event);
   } catch {
-    console.error('Membership analytics delivery failed; Stripe should retry');
+    logger.error('Membership analytics delivery failed; Stripe should retry');
     response.sendStatus(503);
     return;
   }
@@ -46,7 +47,7 @@ router.post('/', express.raw({ type: 'application/json' }), async (request, resp
       break;
     }
     default:
-      console.warn('Unhandled event type:', event.type);
+      logger.warn('Unhandled Stripe event type', { eventType: event.type });
   }
 
   response.sendStatus(200);
@@ -65,7 +66,7 @@ async function triggerDiscordNotification(intent: Stripe.PaymentIntent) {
   try {
     await axios.post(url, data);
   } catch (error) {
-    console.error(error);
+    logger.error('Membership analytics request failed', { error: String(error) });
   }
 }
 

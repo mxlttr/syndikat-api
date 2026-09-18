@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import env from '../env';
+import { logger } from '../logger';
 
 const router = Router();
 const bagTagSchema = z.array(
@@ -22,13 +23,13 @@ router.get('/', async (_, res) => {
     const body = await response.json();
     const parsed = bagTagSchema.safeParse(body);
     if (!parsed.success) {
-      console.error('Bag-tag endpoint returned an invalid payload', parsed.error);
+      logger.error('Bag-tag endpoint returned an invalid payload', { error: parsed.error });
       res.status(500).json({ message: 'Bag-tag endpoint returned an invalid payload' });
       return;
     }
     res.json(parsed.data);
   } catch (error) {
-    console.error(error);
+    logger.error('Bag-tag request failed', { error: String(error) });
     res.status(500).json({ message: 'An error occured' });
   }
 });

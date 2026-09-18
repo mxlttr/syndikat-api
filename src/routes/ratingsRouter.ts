@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../logger';
 import { getRatings } from '../scrapers/ratingsScraper';
 import { filterRatings, filterRatingsByClub } from '../services/ratingsService';
 
@@ -40,7 +41,7 @@ router.get<{ club?: string }>(['/', '/:club'], async (req, res) => {
       divisions,
     });
   } catch (error) {
-    console.error(error);
+    logger.error('Ratings request failed', { error: String(error) });
     res.status(500).json({ message: 'An error occured' });
   }
 });

@@ -1,5 +1,6 @@
 import { type Response, Router } from 'express';
 import { isAbortError } from '../http';
+import { logger } from '../logger';
 import { handleCache } from '../scrapers/storesScraper';
 import shops from '../shopList';
 
@@ -15,7 +16,7 @@ router.get('/feed', async (_, res) => {
     const data = await handleCache('product-feed', 'all');
     res.json(data);
   } catch (error) {
-    console.error(error);
+    logger.error('Product feed request failed', { error: String(error) });
     res.status(500).json({ message: 'An error occured' });
   }
 });
@@ -68,7 +69,7 @@ router.get('/search-stream/:query', async (req, res) => {
           return { store: shop.title, count: 0, ok: false, aborted: true };
         }
 
-        console.error(`Error fetching products for ${shop.title}`, error);
+        logger.error(`Error fetching products for ${shop.title}`, { error: String(error) });
 
         if (!connectionClosed) {
           writeSseEvent(res, 'store-error', {
@@ -96,7 +97,7 @@ router.get('/search-stream/:query', async (req, res) => {
       res.end();
     }
   } catch (error) {
-    console.error('Unexpected error in product search stream', error);
+    logger.error('Unexpected error in product search stream', { error: String(error) });
     if (!connectionClosed && !res.writableEnded) {
       writeSseEvent(res, 'error', {
         message: 'Unexpected stream error',
@@ -113,7 +114,7 @@ router.get('/:type/:query', async (req, res) => {
     const data = await handleCache(type, query);
     res.json(data);
   } catch (error) {
-    console.error(error);
+    logger.error('Product request failed', { error: String(error) });
     res.status(500).json({ message: 'An error occured' });
   }
 });

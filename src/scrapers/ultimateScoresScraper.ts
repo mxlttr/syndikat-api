@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { getText } from '../http';
+import { logger } from '../logger';
 import { getCell } from '../utils';
 
 const BASE_URL = 'https://scores.frisbeesportverband.de/';
@@ -43,7 +44,7 @@ export async function scrapeScores(id: string) {
     );
     return games.filter(Boolean);
   } catch (error) {
-    console.error(error);
+    logger.error('Scores scrape failed', { error: String(error) });
   }
 
   return [];
@@ -66,7 +67,7 @@ export async function scrapeUltiorganizer() {
       });
     });
   } catch (error) {
-    console.error(error);
+    logger.error('Ultiorganizer scores scrape failed', { error: String(error) });
   }
 
   return data ?? [];

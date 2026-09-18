@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { getCache, setCache } from '../cache';
 import env from '../env';
 import { getText } from '../http';
+import { logger } from '../logger';
 import type { Rating } from '../types';
 import { getCell } from '../utils';
 
@@ -56,7 +57,7 @@ async function scrapeRatings(): Promise<Rating[]> {
 
     return ratings.filter(Boolean);
   } catch (error) {
-    console.error(error);
+    logger.error('Ratings scrape failed', { error: String(error) });
     throw new Error('Unable to retrieve ratings');
   }
 }

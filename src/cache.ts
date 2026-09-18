@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import env from './env';
+import { logger } from './logger';
 
 // Create Redis client from HEROKU REDIS_URL
 // If REDIS_URL is not set, defaults to localhost
@@ -55,17 +56,17 @@ let redisAvailable = false;
 if (redis) {
   redis.on('connect', () => {
     redisAvailable = true;
-    console.log('✅ Redis connected');
+    logger.info('✅ Redis connected');
   });
 
   redis.on('error', (err) => {
     redisAvailable = false;
-    console.warn('⚠️ Redis unavailable:', err.message);
+    logger.warn('⚠️ Redis unavailable', { error: err.message });
   });
 
   redis.on('end', () => {
     redisAvailable = false;
-    console.warn('⚠️ Redis connection closed');
+    logger.warn('⚠️ Redis connection closed');
   });
 }
 

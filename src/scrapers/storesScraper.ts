@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { getCache, setCache } from '../cache';
 import env from '../env';
 import { getJson, getText, isAbortError, throwIfAborted } from '../http';
+import { logger } from '../logger';
 import shops from '../shopList';
 
 const crawledAt = new Date().toISOString();
@@ -171,7 +172,7 @@ async function getShopifyProductFeeds(options: ScrapeOptions = {}) {
       allProducts.push(...products.map(normalizeProduct));
     } catch (err) {
       if (isAbortError(err)) throw err;
-      console.error('Error fetching product feed', err);
+      logger.error('Error fetching product feed', { error: String(err) });
     }
   }
   return allProducts.sort(
@@ -548,7 +549,7 @@ async function scrapeBirdieShop(query: string, options: ScrapeOptions = {}) {
         } as DefaultProduct;
       } catch (err) {
         if (isAbortError(err)) throw err;
-        console.error('Error fetching product page', err);
+        logger.error('Error fetching product page', { error: String(err) });
         return null;
       }
     },
@@ -613,7 +614,7 @@ async function scrapeDiscgolf4You(query: string, options: ScrapeOptions = {}) {
         });
       } catch (err) {
         if (isAbortError(err)) throw err;
-        console.error('Error fetching product page', err);
+        logger.error('Error fetching product page', { error: String(err) });
         return [];
       }
     },
@@ -676,7 +677,7 @@ async function scrapeHyzerStore(query: string, options: ScrapeOptions = {}) {
         });
       } catch (err) {
         if (isAbortError(err)) throw err;
-        console.error('Error fetching product page', err);
+        logger.error('Error fetching product page', { error: String(err) });
         return [];
       }
     },

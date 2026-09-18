@@ -1,6 +1,7 @@
 import app from './app';
 import { databaseConfigured, databasePool, setDatabaseAvailable } from './database';
 import env from './env';
+import { logger } from './logger';
 import { runDatabaseMigrations } from './migrations';
 
 const PORT = env.PORT || 8080;
@@ -18,7 +19,7 @@ const databaseStartupDependencies: DatabaseStartupDependencies = {
   runMigrations: () => runDatabaseMigrations(databasePool()),
   setAvailable: setDatabaseAvailable,
   nodeEnv: env.NODE_ENV,
-  warn: console.warn,
+  warn: (message, error) => logger.warn(message, { error: String(error) }),
 };
 
 export async function prepareDatabaseForStartup(
@@ -40,15 +41,12 @@ export async function prepareDatabaseForStartup(
 
 async function start() {
   await prepareDatabaseForStartup();
-  app.listen(PORT, () =>
-    // eslint-disable-next-line no-console
-    console.log(`🥏 API running at http://localhost:${PORT}`),
-  );
+  app.listen(PORT, () => logger.info(`🥏 API running at http://localhost:${PORT}`));
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   start().catch((error: unknown) => {
-    console.error(error);
+    logger.error('API failed to start', { error: String(error) });
     process.exit(1);
   });
 }

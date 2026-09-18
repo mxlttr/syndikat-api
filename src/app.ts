@@ -1,7 +1,9 @@
+import crypto from 'node:crypto';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
 import env from './env';
+import { logger } from './logger';
 import bagtagRouter from './routes/bagtagsRouter';
 import indexRouter from './routes/indexRouter';
 import playersRouter from './routes/playersRouter';
@@ -13,6 +15,13 @@ import tournamentsRouter from './routes/tournamentsRouter';
 import trainingRouter from './routes/trainingRouter';
 
 const app = express();
+
+app.use((req, res, next) => {
+  const requestId = req.header('x-request-id') || crypto.randomUUID();
+  res.setHeader('x-request-id', requestId);
+  res.locals.requestId = requestId;
+  next();
+});
 
 if (env.NODE_ENV === 'production') {
   const allowedOrigins = (env.ALLOWED_ORIGIN ?? '').split(',').map((o) => o.trim());
@@ -58,7 +67,7 @@ if (env.NODE_ENV === 'production') {
           return callback(null, true);
         }
 
-        console.warn(`Blocked CORS request from origin: ${origin}`);
+        logger.warn('Blocked CORS request', { origin });
         const error = new Error(`CORS policy: origin ${origin} not allowed`) as Error & {
           status?: number;
         };
@@ -82,8 +91,8 @@ app.use('/training', trainingRouter);
 app.use('/players', playersRouter);
 
 app.use((err: Error & { status?: number }, _: Request, res: Response, __: NextFunction) => {
-  console.error(err.stack);
-  res.status(err.status ?? 500).send({ message: err.message });
+  logger.error('Unhandled request error', { error: err.stack, requestId: res.locals.requestId });
+  res.status(err.status ?? 500).send({ message: err.message, requestId: res.locals.requestId });
 });
 
 export default app;

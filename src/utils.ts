@@ -1,5 +1,6 @@
 import type { ZodObject, ZodRawShape } from 'zod';
 import { ZodError } from 'zod';
+import { logger } from './logger';
 
 export default function tryParseEnv<T extends ZodRawShape>(
   EnvSchema: ZodObject<T>,
@@ -17,7 +18,7 @@ export default function tryParseEnv<T extends ZodRawShape>(
       e.stack = '';
       throw e;
     } else {
-      console.error(error);
+      logger.error('Environment validation failed unexpectedly', { error: String(error) });
     }
   }
 }

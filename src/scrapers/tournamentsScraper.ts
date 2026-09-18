@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { getCache, setCache } from '../cache';
 import env from '../env';
 import { getJson, getText } from '../http';
+import { logger } from '../logger';
 import { normalizeTournamentLocations } from '../services/locationService.js';
 import type {
   MetrixTournament,
@@ -178,7 +179,7 @@ function playerListUrl(eventId: number) {
 const onTourScraperDependencies: OnTourScraperDependencies = {
   getTournamentIndex: async () => (await getOfficialTournaments()).officialTournaments,
   getPlayerList: (tournament) => getText(playerListUrl(tournament.event_id)),
-  warn: console.warn,
+  warn: (message: string) => logger.warn(message),
 };
 
 function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
