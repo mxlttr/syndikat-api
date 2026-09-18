@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 import env from './env';
 import { logger } from './logger';
 import bagtagRouter from './routes/bagtagsRouter';
@@ -22,6 +24,16 @@ app.use((req, res, next) => {
   res.locals.requestId = requestId;
   next();
 });
+app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { message: 'Too many requests, please try again later.' },
+  }),
+);
 
 if (env.NODE_ENV === 'production') {
   const allowedOrigins = (env.ALLOWED_ORIGIN ?? '').split(',').map((o) => o.trim());

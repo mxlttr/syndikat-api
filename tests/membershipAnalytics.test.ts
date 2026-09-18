@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import axios from 'axios';
 import type Stripe from 'stripe';
+import type { postJson } from '../src/http';
 
 for (const key of [
   'NODE_ENV',
@@ -89,30 +89,32 @@ test('delivery retries failures and suppresses subsequent events for the same ch
     },
   };
   t.mock.method(databasePool(), 'connect', async () => client);
-  t.mock.method(
-    axios,
-    'post',
-    async (_url: string, body: { payload: { name: string; data: object } }) => {
-      attempts++;
-      assert.equal(body.payload.name, 'membership_completed');
-      assert.deepEqual(body.payload.data, {
-        source: 'stripe_webhook',
-        payment_link: 'plink_member',
-        amount_minor: 3000,
-        currency: 'eur',
-      });
-      if (attempts === 1) throw new Error('Umami unavailable');
-      return { status: 200 };
-    },
-  );
+  const send = async (_url: string, body: { payload: { name: string; data: object } }) => {
+    attempts++;
+    assert.equal(body.payload.name, 'membership_completed');
+    assert.deepEqual(body.payload.data, {
+      source: 'stripe_webhook',
+      payment_link: 'plink_member',
+      amount_minor: 3000,
+      currency: 'eur',
+    });
+    if (attempts === 1) throw new Error('Umami unavailable');
+    return { status: 200 };
+  };
   setDatabaseAvailable(false);
   await assert.rejects(trackMembershipConversion(event()), /database unavailable/);
   setDatabaseAvailable(true);
-  await assert.rejects(trackMembershipConversion(event()), /Umami unavailable/);
+  await assert.rejects(
+    trackMembershipConversion(event(), send as typeof postJson),
+    /Umami unavailable/,
+  );
   assert.equal(delivered, false);
-  await trackMembershipConversion(event());
-  await trackMembershipConversion(event());
-  await trackMembershipConversion(event('checkout.session.async_payment_succeeded'));
+  await trackMembershipConversion(event(), send as typeof postJson);
+  await trackMembershipConversion(event(), send as typeof postJson);
+  await trackMembershipConversion(
+    event('checkout.session.async_payment_succeeded'),
+    send as typeof postJson,
+  );
   assert.equal(attempts, 2);
   assert.equal(delivered, true);
   assert.equal(released, 4);

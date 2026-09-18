@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import env from '../env';
+import { getJson } from '../http';
 import { logger } from '../logger';
 
 const router = Router();
@@ -19,8 +20,7 @@ router.get('/', async (_, res) => {
   }
 
   try {
-    const response = await fetch(env.BAGTAG_ENDPOINT);
-    const body = await response.json();
+    const body = await getJson<unknown>(env.BAGTAG_ENDPOINT);
     const parsed = bagTagSchema.safeParse(body);
     if (!parsed.success) {
       logger.error('Bag-tag endpoint returned an invalid payload', { error: parsed.error });

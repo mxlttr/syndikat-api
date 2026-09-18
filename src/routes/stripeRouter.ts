@@ -1,57 +1,71 @@
-import axios from 'axios';
 import express, { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
 import env from '../env';
+import { postJson } from '../http';
 import { logger } from '../logger';
 import { trackMembershipConversion } from '../services/membershipAnalyticsService';
 
 const router = Router();
+
+router.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+  }),
+);
 
 const endpointSecret = env.STRIPE_WEBHOOK_SECRET;
 const stripe = new Stripe(env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2024-06-20',
 });
 
-router.post('/', express.raw({ type: 'application/json' }), async (request, response) => {
-  const sig = request.headers['stripe-signature'];
-  if (!sig || !endpointSecret) {
-    response.status(400).end();
-    return;
-  }
-
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-  } catch (err) {
-    logger.error('Stripe webhook signature validation failed', { error: String(err) });
-    response.status(400).end();
-    return;
-  }
-
-  try {
-    await trackMembershipConversion(event);
-  } catch {
-    logger.error('Membership analytics delivery failed; Stripe should retry');
-    response.sendStatus(503);
-    return;
-  }
-
-  switch (event.type) {
-    case 'checkout.session.completed':
-    case 'checkout.session.async_payment_succeeded':
-      break;
-    case 'payment_intent.succeeded': {
-      const intent = event.data.object as Stripe.PaymentIntent;
-      triggerDiscordNotification(intent);
-      break;
+router.post(
+  '/',
+  express.raw({ type: 'application/json', limit: '256kb' }),
+  async (request, response) => {
+    const sig = request.headers['stripe-signature'];
+    if (!sig || !endpointSecret) {
+      response.status(400).end();
+      return;
     }
-    default:
-      logger.warn('Unhandled Stripe event type', { eventType: event.type });
-  }
 
-  response.sendStatus(200);
-});
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      logger.error('Stripe webhook signature validation failed', { error: String(err) });
+      response.status(400).end();
+      return;
+    }
+
+    try {
+      await trackMembershipConversion(event);
+    } catch {
+      logger.error('Membership analytics delivery failed; Stripe should retry');
+      response.sendStatus(503);
+      return;
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+        break;
+      case 'payment_intent.succeeded': {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        triggerDiscordNotification(intent);
+        break;
+      }
+      default:
+        logger.warn('Unhandled Stripe event type', { eventType: event.type });
+    }
+
+    response.sendStatus(200);
+  },
+);
 
 async function triggerDiscordNotification(intent: Stripe.PaymentIntent) {
   const url = env.DISCORD_WEBHOOK_URL;
@@ -64,7 +78,7 @@ async function triggerDiscordNotification(intent: Stripe.PaymentIntent) {
   };
 
   try {
-    await axios.post(url, data);
+    await postJson(url, data);
   } catch (error) {
     logger.error('Membership analytics request failed', { error: String(error) });
   }

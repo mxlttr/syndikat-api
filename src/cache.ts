@@ -73,3 +73,8 @@ if (redis) {
 export function redisStatus() {
   return redisAvailable;
 }
+
+export async function closeCache() {
+  if (!redis) return;
+  await redis.quit();
+}

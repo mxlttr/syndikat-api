@@ -83,4 +83,12 @@ export async function getJson<T>(url: string, config?: AxiosRequestOptions): Pro
   return requestWithRetry<T>({ url, method: 'GET', responseType: 'json', ...config });
 }
 
+export async function postJson<T>(
+  url: string,
+  data: unknown,
+  config?: AxiosRequestOptions,
+): Promise<T> {
+  return requestWithRetry<T>({ url, method: 'POST', data, responseType: 'json', ...config });
+}
+
 export { http, requestWithRetry };

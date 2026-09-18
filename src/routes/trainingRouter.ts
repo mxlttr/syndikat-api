@@ -75,7 +75,7 @@ function trainingStatus() {
   };
 }
 
-router.use(express.json());
+router.use(express.json({ limit: '32kb' }));
 
 router.get('/status', (_, response) => {
   if (!configured()) return unavailable(response);

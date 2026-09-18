@@ -1,7 +1,7 @@
-import axios from 'axios';
 import type Stripe from 'stripe';
 import { databaseAvailable, databasePool } from '../database';
 import env from '../env';
+import { postJson } from '../http';
 
 export function membershipSession(event: Stripe.Event, allowedLinks: string[]) {
   if (
@@ -23,7 +23,10 @@ export function membershipSession(event: Stripe.Event, allowedLinks: string[]) {
   return session;
 }
 
-export async function trackMembershipConversion(event: Stripe.Event) {
+export async function trackMembershipConversion(
+  event: Stripe.Event,
+  send: typeof postJson = postJson,
+) {
   if (!env.UMAMI_SEND_URL) return;
   const session = membershipSession(
     event,
@@ -45,7 +48,7 @@ export async function trackMembershipConversion(event: Stripe.Event) {
       [session.id],
     );
     if (!result.rows[0].delivered_at) {
-      await axios.post(
+      await send(
         env.UMAMI_SEND_URL,
         {
           type: 'event',
@@ -65,7 +68,7 @@ export async function trackMembershipConversion(event: Stripe.Event) {
             },
           },
         },
-        { timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0 (Server)' } },
+        { headers: { 'User-Agent': 'syndikat-api/1.0' } },
       );
       await client.query(
         'update membership_conversions set delivered_at = now() where checkout_session_id = $1',

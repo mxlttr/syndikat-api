@@ -44,7 +44,7 @@ export async function handleTournamentRoute(req: Request, res: Response) {
   }
 }
 
-export const tournamentRouteJsonMiddleware = express.json();
+export const tournamentRouteJsonMiddleware = express.json({ limit: '32kb' });
 
 export function handleTournamentRouteJsonError(
   error: Error & { status?: number; type?: string },

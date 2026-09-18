@@ -1,5 +1,7 @@
+import type { Server } from 'node:http';
 import app from './app';
-import { databaseConfigured, databasePool, setDatabaseAvailable } from './database';
+import { closeCache } from './cache';
+import { closeDatabase, databaseConfigured, databasePool, setDatabaseAvailable } from './database';
 import env from './env';
 import { logger } from './logger';
 import { runDatabaseMigrations } from './migrations';
@@ -41,7 +43,27 @@ export async function prepareDatabaseForStartup(
 
 async function start() {
   await prepareDatabaseForStartup();
-  app.listen(PORT, () => logger.info(`🥏 API running at http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => logger.info(`🥏 API running at http://localhost:${PORT}`));
+  registerShutdown(server);
+}
+
+function registerShutdown(server: Server) {
+  let shuttingDown = false;
+  const shutdown = (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logger.info(`Received ${signal}; shutting down`);
+    server.close(async (error) => {
+      if (error) {
+        logger.error('HTTP server shutdown failed', { error: String(error) });
+        process.exitCode = 1;
+      }
+      await Promise.allSettled([closeCache(), closeDatabase()]);
+    });
+  };
+
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {

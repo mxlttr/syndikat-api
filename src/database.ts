@@ -26,3 +26,10 @@ export function databasePool() {
   pool ??= new Pool({ connectionString: env.DATABASE_URL });
   return pool;
 }
+
+export async function closeDatabase() {
+  if (!pool) return;
+  await pool.end();
+  pool = undefined;
+  available = false;
+}
