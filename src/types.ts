@@ -64,6 +64,68 @@ export interface TournamentWithPlayers extends TournamentOutput {
   our_players: TournamentPlayer[];
 }
 
+export interface TournamentRegistrationPhase {
+  name: string;
+  start: string | null;
+  end: string | null;
+  capacity: number | null;
+}
+
+export interface TournamentMoney {
+  amount: number;
+  currency: string;
+}
+
+export interface TournamentDivision {
+  name: string;
+  abbreviation: string | null;
+  capacity: number | null;
+  registered: number | null;
+  fee: TournamentMoney | null;
+}
+
+export interface TournamentFile {
+  name: string;
+  url: string;
+}
+
+export interface TournamentResult {
+  division: string;
+  player: string;
+  rank: number | null;
+  score: string | null;
+  rating: number | null;
+}
+
+export interface TournamentDetail {
+  id: number;
+  title: string;
+  organizer: string | null;
+  director: string | null;
+  venue: string | null;
+  location: string | null;
+  station: string | null;
+  coords: { lat: number | null; lng: number | null };
+  link: string;
+  externalLinks: string[];
+  startDate: string | null;
+  endDate: string | null;
+  series: string | null;
+  registrationPhases: TournamentRegistrationPhase[];
+  eligibility: string | null;
+  format: string | null;
+  rounds: string[];
+  courseHoles: number | null;
+  capacity: number | null;
+  indexCapacity: number | null;
+  divisions: TournamentDivision[];
+  fees: TournamentMoney | null;
+  prizeMoney: TournamentMoney | null;
+  files: TournamentFile[];
+  description: string | null;
+  results: TournamentResult[];
+}
+
 export interface Rating {
   firstName: string;
   lastName: string;

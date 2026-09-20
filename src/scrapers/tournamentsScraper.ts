@@ -9,14 +9,24 @@ import type {
   MetrixTournament,
   OfficialTournament,
   RelatedTournament,
+  TournamentDetail,
+  TournamentDivision,
+  TournamentFile,
+  TournamentMoney,
   TournamentOutput,
   TournamentPlayer,
+  TournamentRegistrationPhase,
+  TournamentResult,
   TournamentWithPlayers,
 } from '../types.js';
 
 const isProduction = env.NODE_ENV === 'production';
 const ON_TOUR_CACHE_KEY = 'tournaments:on-tour:v2';
 const ON_TOUR_CONCURRENCY = 5;
+
+export class TournamentNotFoundError extends Error {
+  status = 404;
+}
 
 export function getTournaments<T>(type: string, callback: () => Promise<T>) {
   return async (_: Request, res: Response, next: NextFunction) => {
@@ -77,6 +87,243 @@ async function getOfficialTournaments() {
   const url = `${env.OFFICIAL_URL}?p=api&key=tournaments-actual&token=${env.TOURNAMENTS_API_TOKEN}&secret=${env.TOURNAMENTS_API_SECRET}`;
   const officialTournaments = await getJson<OfficialTournament[]>(url);
   return { officialTournaments };
+}
+
+function text(value: string | undefined): string | null {
+  const result = value?.replace(/\s+/g, ' ').trim();
+  return result || null;
+}
+
+function labelled($: ReturnType<typeof load>, labels: string[]): string | null {
+  let result: string | null = null;
+  $('dt, th, label, strong, b').each((_, element) => {
+    if (result) return;
+    const label = $(element).text().replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!labels.some((candidate) => label.includes(candidate))) return;
+    const value =
+      $(element).next().text() || $(element).parent().text().replace($(element).text(), '');
+    result = text(value);
+  });
+  return result;
+}
+
+function numberValue(value: string | null): number | null {
+  if (!value) return null;
+  const match = value.replace(',', '.').match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
+function moneyValue(value: string | null): TournamentMoney | null {
+  if (!value) return null;
+  const amount = value
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .match(/-?\d+(?:\.\d+)?/)?.[0];
+  if (!amount) return null;
+  const currency = /€|eur/i.test(value) ? 'EUR' : /\$|usd/i.test(value) ? 'USD' : '';
+  return currency ? { amount: Number(amount), currency } : null;
+}
+
+export function parseTournamentDetail(
+  html: string,
+  id: number,
+  index?: OfficialTournament,
+): TournamentDetail {
+  const $ = load(html);
+  const title = text($('h1').first().text()) ?? text($('title').text());
+  if (!title || /^\/\s/.test(title))
+    throw new TournamentNotFoundError(`Tournament ${id} was not found`);
+  const tableRows: Array<readonly [string, string]> = [];
+  $('table tr').each((_, row) => {
+    const cells = $(row)
+      .find('td, th')
+      .map((__, cell) => text($(cell).text()) ?? '')
+      .get();
+    if (cells.length >= 2) tableRows.push([cells[0], cells[1]]);
+  });
+  const rowValue = (labels: string[]) =>
+    tableRows.find(([label]) =>
+      labels.some((candidate) => label.toLowerCase().includes(candidate)),
+    )?.[1] ?? null;
+  const dates = rowValue(['turnierbetrieb']) ?? labelled($, ['datum', 'turnierzeitraum']);
+  const dateRange = dates;
+  const dateMatches = dateRange?.match(
+    /(\d{1,2}\.\d{1,2}\.\d{4})(?:\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4}))?/,
+  );
+  const germanDate = (value: string | undefined) => {
+    if (!value) return null;
+    const [day, month, year] = value.split('.').map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).toISOString();
+  };
+  const pageStartDate = germanDate(dateMatches?.[1]);
+  const pageEndDate = germanDate(dateMatches?.[2]);
+  const coordinateLink = $('a[href*="google.com/maps/place/"]')
+    .attr('href')
+    ?.match(/place\/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  const links = $('a[href]')
+    .map((_, a) => $(a).attr('href'))
+    .get()
+    .filter((href): href is string => Boolean(href));
+  const divisions: TournamentDivision[] = [];
+  $('table').each((_, table) => {
+    const headers = $(table)
+      .find('thead th')
+      .map((__, cell) => $(cell).text().trim().toLowerCase())
+      .get();
+    if (!headers.some((header) => /division|klasse|category/.test(header))) return;
+    $(table)
+      .find('tbody tr')
+      .each((__, row) => {
+        const cells = $(row)
+          .find('td')
+          .map((___, cell) => text($(cell).text()) ?? '')
+          .get();
+        if (cells.length)
+          divisions.push({
+            name: cells[0],
+            abbreviation: null,
+            capacity: numberValue(cells[1] ?? null),
+            registered: numberValue(cells[2] ?? null),
+            fee: moneyValue(cells[3] ?? null),
+          });
+      });
+  });
+  if (!divisions.length) {
+    $('table')
+      .eq(3)
+      .find('tr')
+      .each((_, row) => {
+        const cells = $(row)
+          .find('td')
+          .map((__, cell) => text($(cell).text()) ?? '')
+          .get();
+        if (cells.length === 2 && !/player pack|wildcards/i.test(cells[0]) && /€/.test(cells[1])) {
+          divisions.push({
+            name: cells[0],
+            abbreviation: null,
+            capacity: null,
+            registered: null,
+            fee: moneyValue(cells[1]),
+          });
+        }
+      });
+  }
+  const results: TournamentResult[] = [];
+  $('table').each((_, table) => {
+    const headers = $(table)
+      .find('thead th')
+      .map((__, cell) => $(cell).text().trim().toLowerCase())
+      .get();
+    if (
+      !headers.some((header) => /spieler|player|name/.test(header)) ||
+      !headers.some((header) => /rang|rank|platz/.test(header))
+    )
+      return;
+    $(table)
+      .find('tbody tr')
+      .each((__, row) => {
+        const cells = $(row)
+          .find('td')
+          .map((___, cell) => text($(cell).text()) ?? '')
+          .get();
+        if (cells.length >= 2)
+          results.push({
+            division: '',
+            player: cells[1] ?? cells[0],
+            rank: numberValue(cells[0]),
+            score: cells[2] ?? null,
+            rating: numberValue(cells[3] ?? null),
+          });
+      });
+  });
+  const coords = {
+    lat: index?.location_latitude
+      ? Number(index.location_latitude)
+      : coordinateLink
+        ? Number(coordinateLink[1])
+        : null,
+    lng: index?.location_longitude
+      ? Number(index.location_longitude)
+      : coordinateLink
+        ? Number(coordinateLink[2])
+        : null,
+  };
+  const phase: TournamentRegistrationPhase[] = dates
+    ? [{ name: 'registration', start: null, end: null, capacity: null }]
+    : [];
+  return {
+    id,
+    title,
+    organizer: rowValue(['veranstalter']) ?? labelled($, ['veranstalter', 'organizer']),
+    director:
+      rowValue(['turnierdirektor', 'ansprechpartner']) ??
+      labelled($, ['turnierleitung', 'director']),
+    venue: rowValue(['spielort', 'venue', 'course']),
+    location: index?.location ?? rowValue(['ort']) ?? labelled($, ['ort', 'location']),
+    station: null,
+    coords,
+    link: `${env.OFFICIAL_URL}?p=events&sp=view&id=${id}`,
+    externalLinks: links.filter((link) => !link.includes('p=events')),
+    startDate: index?.timestamp_start
+      ? new Date(index.timestamp_start * 1000).toISOString()
+      : (pageStartDate ?? dates),
+    endDate: index?.timestamp_end
+      ? new Date(index.timestamp_end * 1000).toISOString()
+      : pageEndDate,
+    series: rowValue(['serien']) ?? labelled($, ['serie', 'series']),
+    registrationPhases: phase,
+    eligibility: labelled($, ['teilnahmeberechtigung', 'eligibility']),
+    format: rowValue(['spielformat']) ?? labelled($, ['format']),
+    rounds: rowValue(['runden']) ? [rowValue(['runden']) as string] : [],
+    courseHoles: numberValue(rowValue(['bahnen / hauptkurs']) ?? labelled($, ['löcher', 'holes'])),
+    capacity:
+      index?.spots ??
+      numberValue(rowValue(['startplätze']) ?? labelled($, ['kapazität', 'capacity'])),
+    indexCapacity: index?.spots ?? null,
+    divisions,
+    fees: moneyValue(
+      rowValue(['startgeld', 'gebühr', 'fee']) ?? labelled($, ['startgeld', 'gebühr', 'fee']),
+    ),
+    prizeMoney: moneyValue(rowValue(['preisgeld']) ?? labelled($, ['preisgeld', 'prize money'])),
+    files: $('a[href]')
+      .filter((_, a) => /pdf|download|file/i.test($(a).attr('href') ?? ''))
+      .map(
+        (_, a): TournamentFile => ({
+          name: text($(a).text()) ?? $(a).attr('href') ?? '',
+          url: $(a).attr('href') ?? '',
+        }),
+      )
+      .get(),
+    description: text(
+      $('.description, [class*="description"], [id*="description"]').first().text(),
+    ),
+    results,
+  };
+}
+
+export async function fetchTournamentDetail(id: number): Promise<TournamentDetail> {
+  if (!env.OFFICIAL_URL)
+    throw new UpstreamTournamentError('Official tournament source is not configured');
+  let index: OfficialTournament | undefined;
+  try {
+    index = (await getOfficialTournaments()).officialTournaments.find(
+      (tournament) => tournament.event_id === id,
+    );
+  } catch {
+    /* Historical details may exist without an index. */
+  }
+  try {
+    return parseTournamentDetail(
+      await getText(`${env.OFFICIAL_URL}?p=events&sp=view&id=${id}`),
+      id,
+      index,
+    );
+  } catch (error) {
+    if (error instanceof TournamentNotFoundError) throw error;
+    throw new UpstreamTournamentError('Tournament detail is temporarily unavailable', {
+      cause: error,
+    });
+  }
 }
 
 export async function fetchOfficial(): Promise<TournamentOutput[]> {

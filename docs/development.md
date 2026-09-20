@@ -47,7 +47,7 @@ outside the repository and configure the API with the environment variables abov
 
 For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web).
 
-The `/tournaments/on-tour` response includes Syndikat players from both the starter and waiting lists. Each `our_players` entry includes `waitlisted` (boolean); the website lists starters first and groups waiting-list players in parentheses, e.g. “Person 1, Person 2, (Person 3, Person 4)”.
+The `/on-tour` response includes Syndikat players from both the starter and waiting lists. Each `our_players` entry includes `waitlisted` (boolean); the website lists starters first and groups waiting-list players in parentheses, e.g. “Person 1, Person 2, (Person 3, Person 4)”.
 
 ## Membership conversion analytics
 

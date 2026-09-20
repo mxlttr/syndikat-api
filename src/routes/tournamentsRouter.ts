@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   fetchOfficial,
-  getPlayersOnTour,
+  fetchTournamentDetail,
   getTournaments,
   scrapeMetrix,
 } from '../scrapers/tournamentsScraper';
@@ -28,6 +28,17 @@ router.get('/metrix', async (req, res, next) =>
   getTournaments('metrix', scrapeMetrix)(req, res, next),
 );
 
-router.get('/on-tour', async (req, res, next) => getPlayersOnTour()(req, res, next));
+router.get('/:id', async (req, res, next) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id < 1) {
+    res.status(400).send({ message: 'Tournament ID must be a positive integer' });
+    return;
+  }
+  try {
+    res.send(await fetchTournamentDetail(id));
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;

@@ -15,6 +15,7 @@ import scoresRouter from './routes/scoresRouter';
 import stripeRouter from './routes/stripeRouter';
 import tournamentsRouter from './routes/tournamentsRouter';
 import trainingRouter from './routes/trainingRouter';
+import { getPlayersOnTour } from './scrapers/tournamentsScraper';
 
 const app = express();
 
@@ -93,6 +94,7 @@ if (env.NODE_ENV === 'production') {
 }
 
 app.use('/', indexRouter);
+app.get('/on-tour', async (req, res, next) => getPlayersOnTour()(req, res, next));
 app.use('/tournaments', tournamentsRouter);
 app.use('/bagtag', bagtagRouter);
 app.use('/ratings', ratingsRouter);

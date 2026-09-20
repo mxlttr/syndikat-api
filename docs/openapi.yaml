@@ -182,7 +182,7 @@ paths:
                   $ref: '#/components/schemas/Tournament'
         '500':
           $ref: '#/components/responses/ServerError'
-  /tournaments/on-tour:
+  /on-tour:
     get:
       tags: [Tournaments]
       summary: Return tournaments with Syndikat players
@@ -203,6 +203,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RouteError'
+  /tournaments/{id}:
+    get:
+      tags: [Tournaments]
+      summary: Return tournament details
+      operationId: getTournament
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Tournament details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TournamentDetail' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
   /tournaments/route:
     post:
       tags: [Tournaments]
@@ -477,6 +496,16 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Message'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    UpstreamError:
+      description: Official source is unavailable or could not be parsed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
     ServerError:
       description: Server or upstream error
       content:
@@ -638,6 +667,45 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/TournamentPlayer'
+    TournamentDetail:
+      type: object
+      required: [id, title, link, coords, registrationPhases, divisions, files, results]
+      properties:
+        id: { type: integer, minimum: 1 }
+        title: { type: string }
+        organizer: { type: [string, 'null'] }
+        director: { type: [string, 'null'] }
+        venue: { type: [string, 'null'] }
+        location: { type: [string, 'null'] }
+        station: { type: [string, 'null'] }
+        coords:
+          type: object
+          required: [lat, lng]
+          properties: { lat: { type: [number, 'null'] }, lng: { type: [number, 'null'] } }
+        link: { type: string, format: uri }
+        externalLinks: { type: array, items: { type: string, format: uri-reference } }
+        startDate: { type: [string, 'null'], format: date-time }
+        endDate: { type: [string, 'null'], format: date-time }
+        series: { type: [string, 'null'] }
+        registrationPhases: { type: array, items: { type: object } }
+        eligibility: { type: [string, 'null'] }
+        format: { type: [string, 'null'] }
+        rounds: { type: array, items: { type: string } }
+        courseHoles: { type: [integer, 'null'] }
+        capacity: { type: [integer, 'null'] }
+        indexCapacity: { type: [integer, 'null'] }
+        divisions: { type: array, items: { type: object } }
+        fees: { anyOf: [{ $ref: '#/components/schemas/TournamentMoney' }, { type: 'null' }] }
+        prizeMoney: { anyOf: [{ $ref: '#/components/schemas/TournamentMoney' }, { type: 'null' }] }
+        files: { type: array, items: { type: object } }
+        description: { type: [string, 'null'] }
+        results: { type: array, items: { type: object } }
+    TournamentMoney:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
     TournamentPlayer:
       type: object
       required: [gtId, pdgaId, name, waitlisted]
