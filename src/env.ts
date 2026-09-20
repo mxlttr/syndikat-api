@@ -6,7 +6,7 @@ dotenv.config();
 
 const EnvSchema = z
   .object({
-    NODE_ENV: z.string(),
+    NODE_ENV: z.string().default('development'),
     ALLOWED_ORIGIN: z.string(),
     BAGTAG_ENDPOINT: z.string(),
     CACHE_EXPIRY: z.string(),
