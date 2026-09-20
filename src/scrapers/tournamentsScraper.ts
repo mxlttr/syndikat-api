@@ -279,7 +279,7 @@ export function parseTournamentDetail(
     capacity:
       index?.spots ??
       numberValue(rowValue(['startplätze']) ?? labelled($, ['kapazität', 'capacity'])),
-    indexCapacity: index?.spots ?? null,
+    registered: index?.num_attendees ?? null,
     divisions,
     fees: moneyValue(
       rowValue(['startgeld', 'gebühr', 'fee']) ?? labelled($, ['startgeld', 'gebühr', 'fee']),

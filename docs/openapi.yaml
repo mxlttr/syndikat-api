@@ -693,7 +693,7 @@ components:
         rounds: { type: array, items: { type: string } }
         courseHoles: { type: [integer, 'null'] }
         capacity: { type: [integer, 'null'] }
-        indexCapacity: { type: [integer, 'null'] }
+        registered: { type: [integer, 'null'], minimum: 0 }
         divisions: { type: array, items: { type: object } }
         fees: { anyOf: [{ $ref: '#/components/schemas/TournamentMoney' }, { type: 'null' }] }
         prizeMoney: { anyOf: [{ $ref: '#/components/schemas/TournamentMoney' }, { type: 'null' }] }

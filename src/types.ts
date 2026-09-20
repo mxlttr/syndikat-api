@@ -117,7 +117,7 @@ export interface TournamentDetail {
   rounds: string[];
   courseHoles: number | null;
   capacity: number | null;
-  indexCapacity: number | null;
+  registered: number | null;
   divisions: TournamentDivision[];
   fees: TournamentMoney | null;
   prizeMoney: TournamentMoney | null;
