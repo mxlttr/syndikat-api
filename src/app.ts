@@ -10,6 +10,7 @@ import bagtagRouter from './routes/bagtagsRouter';
 import indexRouter from './routes/indexRouter';
 import playersRouter from './routes/playersRouter';
 import productsRouter from './routes/productsRouter';
+import recommendationsRouter from './routes/recommendationsRouter';
 import ratingsRouter from './routes/ratingsRouter';
 import scoresRouter from './routes/scoresRouter';
 import stripeRouter from './routes/stripeRouter';
@@ -17,6 +18,7 @@ import tournamentsRouter from './routes/tournamentsRouter';
 import trainingRouter from './routes/trainingRouter';
 
 const app = express();
+app.use(express.json({ limit: '16kb' }));
 
 app.use((req, res, next) => {
   const requestId = req.header('x-request-id') || crypto.randomUUID();
@@ -98,6 +100,7 @@ app.use('/bagtag', bagtagRouter);
 app.use('/ratings', ratingsRouter);
 app.use('/scores', scoresRouter);
 app.use('/products', productsRouter);
+app.use('/recommendations', recommendationsRouter);
 app.use('/stripe-webhook', stripeRouter);
 app.use('/training', trainingRouter);
 app.use('/players', playersRouter);

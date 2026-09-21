@@ -1,8 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 import tryParseEnv from './utils';
 
-dotenv.config();
+dotenv.config({
+  path: fileURLToPath(new URL('../.env', import.meta.url)),
+  override: true,
+});
 
 const EnvSchema = z
   .object({
@@ -26,6 +30,7 @@ const EnvSchema = z
     TOURNAMENTS_API_TOKEN: z.string(),
     ALLOWED_ORIGIN_SUFFIX: z.string().optional(),
     OPENROUTESERVICE_API_URL: z.string().optional(),
+    JEV_API_KEY: z.string().min(1).optional(),
     BAHN_STATION_API_URL: z.string().optional(),
     PORT: z.string().optional(),
     NEW_PRODUCT_DAYS: z.string().optional(),
