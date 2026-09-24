@@ -5,22 +5,33 @@ info:
   description: |
     Website-facing API for syndikat.golf. This contract is maintained manually alongside Express routes.
     Third-party scraper data can change independently; clients must tolerate omitted optional fields.
+  license:
+    name: ISC
+    identifier: ISC
   contact:
     name: Syndikat Disc Golf
     url: https://syndikat.golf
 servers:
   - url: https://api.syndikat.golf
     description: Production
-  - url: http://localhost:8080
+  - url: http://{host}:8080
     description: Local development
+    variables:
+      host:
+        default: localhost
 # All endpoints are public unless an operation overrides this with a security requirement.
 security: []
 tags:
   - name: Health
+    description: Service availability and dependency health.
   - name: Community
+    description: Player ratings, profiles, and bag-tag rankings.
   - name: Tournaments
+    description: Upcoming tournaments and route planning.
   - name: Products
+    description: Product feeds and searches across supported stores.
   - name: Training
+    description: Training dates, signup status, and participants.
 paths:
   /:
     get:
