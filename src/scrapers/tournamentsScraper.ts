@@ -82,35 +82,32 @@ async function getOfficialTournaments() {
 export async function fetchOfficial(): Promise<TournamentOutput[]> {
   const { officialTournaments } = await getOfficialTournaments();
 
-  const tournaments = officialTournaments
-    .map(
-      (tournament: OfficialTournament): TournamentOutput => ({
-        title: tournament.event_name || 'Kein Name vergeben',
-        event_id: tournament.event_id,
-        link: `${env.OFFICIAL_URL}?p=events&sp=view&id=${tournament.event_id}`,
-        location: tournament.location,
-        coords: {
-          lat: Number.parseFloat(tournament.location_latitude) ?? null,
-          lng: Number.parseFloat(tournament.location_longitude) ?? null,
-        },
-        badge: tournament.status === 2 ? 'vorläufig' : undefined,
-        dates: {
-          startTournament: tournament.timestamp_start
-            ? new Date(tournament.timestamp_start * 1000)
-            : null,
-          endTournament: tournament.timestamp_end
-            ? new Date(tournament.timestamp_end * 1000)
-            : null,
-          startRegistration: tournament.timestamp_registration_phase
-            ? new Date(tournament.timestamp_registration_phase * 1000)
-            : null,
-        },
-        spots: {
-          overall: tournament.spots,
-          used: tournament.num_attendees,
-        },
-      }),
-    );
+  const tournaments = officialTournaments.map(
+    (tournament: OfficialTournament): TournamentOutput => ({
+      title: tournament.event_name || 'Kein Name vergeben',
+      event_id: tournament.event_id,
+      link: `${env.OFFICIAL_URL}?p=events&sp=view&id=${tournament.event_id}`,
+      location: tournament.location,
+      coords: {
+        lat: Number.parseFloat(tournament.location_latitude) ?? null,
+        lng: Number.parseFloat(tournament.location_longitude) ?? null,
+      },
+      badge: tournament.status === 2 ? 'vorläufig' : undefined,
+      dates: {
+        startTournament: tournament.timestamp_start
+          ? new Date(tournament.timestamp_start * 1000)
+          : null,
+        endTournament: tournament.timestamp_end ? new Date(tournament.timestamp_end * 1000) : null,
+        startRegistration: tournament.timestamp_registration_phase
+          ? new Date(tournament.timestamp_registration_phase * 1000)
+          : null,
+      },
+      spots: {
+        overall: tournament.spots,
+        used: tournament.num_attendees,
+      },
+    }),
+  );
 
   return normalizeTournamentLocations(tournaments);
 }
