@@ -83,7 +83,6 @@ export async function fetchOfficial(): Promise<TournamentOutput[]> {
   const { officialTournaments } = await getOfficialTournaments();
 
   const tournaments = officialTournaments
-    .filter((tournament) => tournament.location_latitude && tournament.location_longitude)
     .map(
       (tournament: OfficialTournament): TournamentOutput => ({
         title: tournament.event_name || 'Kein Name vergeben',
