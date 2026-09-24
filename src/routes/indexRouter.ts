@@ -3,6 +3,7 @@ import { redisStatus } from '../cache';
 
 const router = Router();
 
+// Keep health checks lightweight; Redis status is informational.
 export function healthPayload() {
   return {
     status: 'ok',
