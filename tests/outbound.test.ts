@@ -26,6 +26,7 @@ process.env.BAGTAG_ENDPOINT = 'https://example.test/bag-tags';
 process.env.METRIX_URL = 'https://example.test/metrix';
 
 const { outboundUrl, resolveOutboundDestination } = await import('../src/services/outboundService');
+const { cleanURL } = await import('../src/scrapers/storesScraper');
 const { analyticsOptedOut } = await import('../src/services/analyticsService');
 const { default: shops } = await import('../src/shopList');
 const { default: app } = await import('../src/app');
@@ -43,6 +44,15 @@ test('outbound URLs contain the readable product path and preserve its query', (
       'http://localhost:8080',
     ),
     'http://localhost:8080/out/itc/products/flight?variant=42',
+  );
+});
+
+test('cleanURL removes tracking query parameters but preserves functional ones', () => {
+  assert.equal(
+    cleanURL(
+      'https://shop.test/products/disc?variant=42&_pos=1&_psq=disc&utm_source=email#details',
+    ),
+    'https://shop.test/products/disc?variant=42',
   );
 });
 

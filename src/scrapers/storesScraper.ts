@@ -786,6 +786,17 @@ export function cleanURL(string: string | null | undefined): string | null {
   try {
     const normalized = trimmed.startsWith('//') ? `https:${trimmed}` : trimmed;
     const parsedURL = new URL(normalized);
+    parsedURL.hash = '';
+    for (const key of [...parsedURL.searchParams.keys()]) {
+      const normalizedKey = key.toLowerCase();
+      if (
+        key.startsWith('_') ||
+        normalizedKey.startsWith('utm_') ||
+        ['fbclid', 'gclid', 'msclkid'].includes(normalizedKey)
+      ) {
+        parsedURL.searchParams.delete(key);
+      }
+    }
     return parsedURL.toString();
   } catch {
     return null;
