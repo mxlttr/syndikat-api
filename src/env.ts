@@ -22,6 +22,7 @@ const EnvSchema = z
     UMAMI_SEND_URL: z.url().optional(),
     UMAMI_WEBSITE_ID: z.uuid().optional(),
     UMAMI_HOSTNAME: z.string().min(1).optional(),
+    PUBLIC_API_BASE_URL: z.url().optional(),
     TOURNAMENTS_API_SECRET: z.string(),
     TOURNAMENTS_API_TOKEN: z.string(),
     ALLOWED_ORIGIN_SUFFIX: z.string().optional(),

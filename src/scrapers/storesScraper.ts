@@ -3,6 +3,7 @@ import { getCache, setCache } from '../cache';
 import env from '../env';
 import { getJson, getText, isAbortError, throwIfAborted } from '../http';
 import { logger } from '../logger';
+import { outboundUrl } from '../services/outboundService';
 import shops from '../shopList';
 
 const crawledAt = new Date().toISOString();
@@ -759,7 +760,7 @@ function normalizeFlightNumbers(product: DefaultProduct): DefaultProduct['flight
 }
 
 function normalizeProduct(product: DefaultProduct): DefaultProduct {
-  return {
+  const normalized = {
     ...product,
     title: normalizeTitle(product.title),
     image: normalizeImageUrl(product.image),
@@ -769,16 +770,22 @@ function normalizeProduct(product: DefaultProduct): DefaultProduct {
     flightNumbers: normalizeFlightNumbers(product),
     createdAt: normalizeOptionalString(product.createdAt),
   };
+  const shop = shops.find((candidate) => candidate.title === normalized.store) as
+    | ((typeof shops)[number] & { id?: string })
+    | undefined;
+  if (!normalized.url || !shop?.id || !env.PUBLIC_API_BASE_URL) return normalized;
+  return {
+    ...normalized,
+    url: outboundUrl(shop.id, { url: normalized.url }, env.PUBLIC_API_BASE_URL),
+  };
 }
 
-function cleanURL(string: string | null | undefined): string | null {
+export function cleanURL(string: string | null | undefined): string | null {
   const trimmed = string?.trim();
   if (!trimmed) return null;
   try {
     const normalized = trimmed.startsWith('//') ? `https:${trimmed}` : trimmed;
     const parsedURL = new URL(normalized);
-    parsedURL.search = '';
-    parsedURL.hash = '';
     return parsedURL.toString();
   } catch {
     return null;

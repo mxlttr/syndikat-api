@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import express, { type Response, Router } from 'express';
 import { databaseAvailable, databasePool } from '../database';
 import env from '../env';
+import { analyticsOptedOut, trackTrainingSignup } from '../services/analyticsService';
 
 const router = Router();
 
@@ -117,6 +118,7 @@ router.post('/participants', async (request, response, next) => {
        values ($1, $2, $3) returning id, display_name as name, training_date::text as date`,
       [status.date, name, hashToken(removalToken)],
     );
+    if (!analyticsOptedOut(request)) void trackTrainingSignup().catch(() => {});
     return response.status(201).json({ participant: result.rows[0], removalToken });
   } catch (error) {
     if ((error as { code?: string }).code === '23505')

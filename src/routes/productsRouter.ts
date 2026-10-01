@@ -2,6 +2,12 @@ import { type Response, Router } from 'express';
 import { isAbortError } from '../http';
 import { logger } from '../logger';
 import { handleCache } from '../scrapers/storesScraper';
+import {
+  analyticsOptedOut,
+  trackProductSearch,
+  trackProductSearchCompleted,
+  trackProductSearchNoResults,
+} from '../services/analyticsService';
 import shops from '../shopList';
 
 const router = Router();
@@ -24,6 +30,12 @@ router.get('/feed', async (_, res) => {
 router.get('/search-stream/:query', async (req, res) => {
   const { query } = req.params;
   const controller = new AbortController();
+
+  if (!analyticsOptedOut(req)) {
+    void trackProductSearch(query).catch((error) => {
+      logger.warn('Product search analytics failed', { error: String(error), query });
+    });
+  }
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -83,12 +95,31 @@ router.get('/search-stream/:query', async (req, res) => {
     });
 
     const results = await Promise.all(storePromises);
+    const totalProducts = results.reduce((sum, result) => sum + result.count, 0);
+
+    if (!analyticsOptedOut(req)) {
+      void trackProductSearchCompleted(query, totalProducts).catch((error) => {
+        logger.warn('Product search completion analytics failed', {
+          error: String(error),
+          query,
+          productCount: totalProducts,
+        });
+      });
+      if (totalProducts === 0) {
+        void trackProductSearchNoResults(query).catch((error) => {
+          logger.warn('Product search no-results analytics failed', {
+            error: String(error),
+            query,
+          });
+        });
+      }
+    }
 
     if (!connectionClosed) {
       writeSseEvent(res, 'end', {
         query,
         storesCompleted: results.length,
-        totalProducts: results.reduce((sum, result) => sum + result.count, 0),
+        totalProducts,
         failedStores: results
           .filter((result) => !result.ok && !result.aborted)
           .map((result) => result.store),

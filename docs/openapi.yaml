@@ -268,6 +268,30 @@ paths:
                   $ref: '#/components/schemas/Product'
         '500':
           $ref: '#/components/responses/ServerError'
+  /out/{shopId}/{productPath}:
+    get:
+      tags: [Products]
+      summary: Redirect to a validated merchant product URL
+      description: Resolves the readable product path against the configured shop origin, adds the Syndikat referral parameter, and returns a temporary redirect. The productPath wildcard may contain multiple slash-separated segments. Valid redirects emit a best-effort product_click event unless the syndikat_analytics_disabled=1 cookie is present.
+      operationId: redirectToProduct
+      parameters:
+        - name: shopId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: productPath
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to the configured merchant host
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '400':
+          description: Product path is invalid for the configured shop
+        '404':
+          description: Invalid shop
   /products/search-stream/{query}:
     get:
       tags: [Products]

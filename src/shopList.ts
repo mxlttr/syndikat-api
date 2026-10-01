@@ -1,47 +1,57 @@
+export const outboundReferralParams = { ref: 'syndikat.golf' };
+
 export default [
   {
+    id: 'dgs',
     url: 'https://www.discgolfstore.de/search/?qs={{query}}&af=96',
     feed: null,
     shopSystem: 'jtl',
     title: 'discgolfstore',
   },
   {
+    id: 'tnr',
     url: 'https://thrownatur-discgolf.de/de/advanced_search_result.php?keywords={{query}}&listing_count=288',
     feed: null,
     shopSystem: 'gambio',
     title: 'thrownatur',
   },
   {
+    id: 'crl',
     url: 'https://www.discgolf-shop.de/advanced_search_result.php?keywords={{query}}&listing_count=1200',
     feed: null,
     shopSystem: 'gambio',
     title: 'crosslap',
   },
   {
+    id: 'frb',
     url: 'https://www.frisbeeshop.com/search?search={{query}}&order=topseller&limit=100',
     feed: null,
     shopSystem: 'shopware',
     title: 'frisbeeshop',
   },
   {
+    id: 'itc',
     url: 'https://www.inside-the-circle.de/search/suggest.json?q={{query}}',
     feed: 'https://www.inside-the-circle.de/collections/new-collection/products.json?limit=50',
     shopSystem: 'shopify',
     title: 'insidethecircle',
   },
   {
+    id: 'cyd',
     url: 'https://www.chooseyourdisc.com/search/suggest.json?q={{query}}',
     feed: 'https://www.chooseyourdisc.com/collections/highlights/products.json?limit=50',
     shopSystem: 'shopify',
     title: 'chooseyourdisc',
   },
   {
+    id: 'dwl',
     url: 'https://www.discwolf.com/search/suggest.json?q={{query}}',
     feed: 'https://discwolf.com/collections/new-in-store/products.json?limit=50',
     shopSystem: 'shopify',
     title: 'discwolf',
   },
   {
+    id: 'brd',
     url: 'https://www.birdie-shop.com/search?q={{query}}',
     disabled: true,
     feed: null,
@@ -49,12 +59,14 @@ export default [
     title: 'birdieshop',
   },
   {
+    id: 'dgy',
     url: 'https://discgolf4you.com/page/{{page}}/?s={{query}}&post_type=product',
     feed: null,
     shopSystem: 'woocommerce',
     title: 'discgolf4you',
   },
   {
+    id: 'hyz',
     url: 'https://www.hyzer-store.de/page/{{page}}/?s={{query}}&post_type=product',
     disabled: true,
     feed: null,

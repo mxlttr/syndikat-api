@@ -8,6 +8,7 @@ import env from './env';
 import { logger } from './logger';
 import bagtagRouter from './routes/bagtagsRouter';
 import indexRouter from './routes/indexRouter';
+import outboundRouter from './routes/outboundRouter';
 import playersRouter from './routes/playersRouter';
 import productsRouter from './routes/productsRouter';
 import ratingsRouter from './routes/ratingsRouter';
@@ -70,6 +71,7 @@ if (env.NODE_ENV === 'production') {
 
   app.use(
     cors({
+      credentials: true,
       origin: (origin, callback) => {
         // allow requests with no origin
         // (curl, mobile apps, server-to-server)
@@ -89,7 +91,7 @@ if (env.NODE_ENV === 'production') {
     }),
   );
 } else {
-  app.use(cors({ origin: true }));
+  app.use(cors({ origin: true, credentials: true }));
 }
 
 app.use('/', indexRouter);
@@ -98,6 +100,7 @@ app.use('/bagtag', bagtagRouter);
 app.use('/ratings', ratingsRouter);
 app.use('/scores', scoresRouter);
 app.use('/products', productsRouter);
+app.use('/out', outboundRouter);
 app.use('/stripe-webhook', stripeRouter);
 app.use('/training', trainingRouter);
 app.use('/players', playersRouter);

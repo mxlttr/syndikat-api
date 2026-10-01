@@ -27,25 +27,17 @@ process.env.METRIX_URL = 'https://example.test/metrix';
 
 const { default: app } = await import('../src/app');
 
-const httpTestOptions = process.env.CI
-  ? undefined
-  : { skip: 'HTTP listeners are restricted in the local sandbox; CI runs these tests.' };
+test('health endpoint returns status, security headers, and request ID', async () => {
+  const response = await request(app).get('/health').set('x-request-id', 'http-test');
 
-test(
-  'health endpoint returns status, security headers, and request ID',
-  httpTestOptions,
-  async () => {
-    const response = await request(app).get('/health').set('x-request-id', 'http-test');
+  assert.equal(response.status, 200);
+  assert.equal(response.body.status, 'ok');
+  assert.equal(response.headers['x-request-id'], 'http-test');
+  assert.equal(response.headers['x-content-type-options'], 'nosniff');
+  assert.match(response.headers.ratelimit ?? '', /300/);
+});
 
-    assert.equal(response.status, 200);
-    assert.equal(response.body.status, 'ok');
-    assert.equal(response.headers['x-request-id'], 'http-test');
-    assert.equal(response.headers['x-content-type-options'], 'nosniff');
-    assert.match(response.headers.ratelimit ?? '', /300/);
-  },
-);
-
-test('unknown routes return the standard error shape', httpTestOptions, async () => {
+test('unknown routes return the standard error shape', async () => {
   const response = await request(app).get('/does-not-exist').set('x-request-id', 'missing-test');
 
   assert.equal(response.status, 404);

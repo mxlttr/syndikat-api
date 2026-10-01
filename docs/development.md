@@ -17,6 +17,7 @@ Configuration names are documented here only; values, tokens, passwords, and pro
 | Route planning | `OPENROUTESERVICE_API_KEY`, `OPENROUTESERVICE_API_URL`, `BAHN_STATION_API_URL` |
 | Product feed | `NEW_PRODUCT_DAYS` |
 | Training signups | `DATABASE_URL`, `SESSION_SECRET`, `TRAINING_SIGNUP_PASSWORD` |
+| Public API URLs | `PUBLIC_API_BASE_URL` (for example `https://api.syndikat.golf`; used when constructing public API links) |
 | Stripe integration (not public API documentation) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 | Membership analytics | `UMAMI_SEND_URL`, `UMAMI_WEBSITE_ID`, `UMAMI_HOSTNAME`, `STRIPE_MEMBERSHIP_PAYMENT_LINK_IDS`, `DATABASE_URL` |
 | Existing notification integration | `DISCORD_CHANNEL_ID`, `DISCORD_WEBHOOK_URL` |
