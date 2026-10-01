@@ -3,6 +3,14 @@ import env from '../env';
 import { postJson } from '../http';
 
 export const ANALYTICS_OPT_OUT_COOKIE = 'syndikat_analytics_disabled';
+export const ANALYTICS_USER_AGENT =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+export function assertAnalyticsAccepted(response: unknown) {
+  if (response && typeof response === 'object' && 'beep' in response && response.beep === 'boop') {
+    throw new Error('Umami rejected analytics event as bot traffic');
+  }
+}
 
 export function analyticsOptedOut(request: Pick<Request, 'headers'>) {
   return (
@@ -19,7 +27,7 @@ async function trackEvent(
   send: typeof postJson,
 ): Promise<boolean> {
   if (!env.UMAMI_SEND_URL || !env.UMAMI_WEBSITE_ID || !env.UMAMI_HOSTNAME) return false;
-  await send(
+  const response = await send(
     env.UMAMI_SEND_URL,
     {
       type: 'event',
@@ -31,8 +39,9 @@ async function trackEvent(
         data,
       },
     },
-    { headers: { 'User-Agent': 'syndikat-api/1.0' } },
+    { headers: { 'User-Agent': ANALYTICS_USER_AGENT } },
   );
+  assertAnalyticsAccepted(response);
   return true;
 }
 

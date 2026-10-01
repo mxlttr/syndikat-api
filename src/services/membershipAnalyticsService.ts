@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { databaseAvailable, databasePool } from '../database';
 import env from '../env';
 import { postJson } from '../http';
+import { ANALYTICS_USER_AGENT, assertAnalyticsAccepted } from './analyticsService';
 
 export function membershipSession(event: Stripe.Event, allowedLinks: string[]) {
   if (
@@ -48,7 +49,7 @@ export async function trackMembershipConversion(
       [session.id],
     );
     if (!result.rows[0].delivered_at) {
-      await send(
+      const response = await send(
         env.UMAMI_SEND_URL,
         {
           type: 'event',
@@ -68,8 +69,9 @@ export async function trackMembershipConversion(
             },
           },
         },
-        { headers: { 'User-Agent': 'syndikat-api/1.0' } },
+        { headers: { 'User-Agent': ANALYTICS_USER_AGENT } },
       );
+      assertAnalyticsAccepted(response);
       await client.query(
         'update membership_conversions set delivered_at = now() where checkout_session_id = $1',
         [session.id],

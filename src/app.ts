@@ -18,6 +18,8 @@ import tournamentsRouter from './routes/tournamentsRouter';
 import trainingRouter from './routes/trainingRouter';
 
 const app = express();
+// Coolify's reverse proxy forwards the client address in X-Forwarded-For.
+app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
   const requestId = req.header('x-request-id') || crypto.randomUUID();

@@ -34,6 +34,7 @@ const {
   trackProductSearchNoResults,
   trackRatingsEvent,
   trackTrainingSignup,
+  assertAnalyticsAccepted,
 } = await import('../src/services/analyticsService');
 const env = (await import('../src/env')).default;
 
@@ -100,4 +101,9 @@ test('analytics helpers report disabled configuration and propagate delivery fai
   await assert.rejects(trackProductSearch('query', failingSend), /Umami unavailable/);
   env.UMAMI_WEBSITE_ID = original.website;
   env.UMAMI_HOSTNAME = original.hostname;
+});
+
+test('analytics helpers reject Umami bot-detection responses', () => {
+  assert.throws(() => assertAnalyticsAccepted({ beep: 'boop' }), /bot traffic/);
+  assert.doesNotThrow(() => assertAnalyticsAccepted({ cache: 'accepted' }));
 });
