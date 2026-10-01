@@ -83,6 +83,10 @@ export function trackRatingsEvent(
   return trackEvent(name, '/ratings', data, send);
 }
 
+export function trackPlayerLoaded(gtNumber: number, send: typeof postJson = postJson) {
+  return trackEvent('player_loaded', `/players/${gtNumber}`, { gt_number: gtNumber }, send);
+}
+
 export function trackTrainingSignup(send: typeof postJson = postJson) {
   return trackEvent('training_signup_completed', '/training/participants', {}, send);
 }

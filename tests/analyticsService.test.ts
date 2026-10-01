@@ -33,6 +33,7 @@ const {
   trackProductSearchCompleted,
   trackProductSearchNoResults,
   trackRatingsEvent,
+  trackPlayerLoaded,
   trackTrainingSignup,
   assertAnalyticsAccepted,
 } = await import('../src/services/analyticsService');
@@ -57,6 +58,7 @@ test('analytics helpers send the expected Umami event payloads', async () => {
   assert.equal(await trackProductSearchCompleted('Buzzz', 3, send), true);
   assert.equal(await trackProductSearchNoResults('Nothing', send), true);
   assert.equal(await trackRatingsEvent('ratings_no_results', { query: 'x' }, send), true);
+  assert.equal(await trackPlayerLoaded(12345, send), true);
   assert.equal(await trackTrainingSignup(send), true);
 
   assert.deepEqual(
@@ -70,6 +72,7 @@ test('analytics helpers send the expected Umami event payloads', async () => {
       { name: 'product_search_completed', data: { query: 'Buzzz', product_count: 3 } },
       { name: 'product_search_no_results', data: { query: 'Nothing' } },
       { name: 'ratings_no_results', data: { query: 'x' } },
+      { name: 'player_loaded', data: { gt_number: 12345 } },
       { name: 'training_signup_completed', data: {} },
     ],
   );
