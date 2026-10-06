@@ -197,7 +197,7 @@ paths:
     get:
       tags: [Tournaments]
       summary: Return tournaments with Syndikat players
-      description: Returns upcoming tournaments that include one or more Syndikat players.
+      description: Returns live tournaments that include one or more Syndikat players. Individual upstream player-list failures are omitted from the response; a 502 is returned only when the tournament source or every player list is unavailable.
       operationId: getOnTourTournaments
       responses:
         '200':

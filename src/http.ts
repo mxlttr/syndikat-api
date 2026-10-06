@@ -3,7 +3,9 @@ import axios from 'axios';
 type AxiosRequestConfigWithSignal = Parameters<typeof axios.request>[0] & {
   signal?: AbortSignal;
 };
-type AxiosRequestOptions = Omit<AxiosRequestConfigWithSignal, 'method' | 'url'>;
+type AxiosRequestOptions = Omit<AxiosRequestConfigWithSignal, 'method' | 'url'> & {
+  retries?: number;
+};
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -76,11 +78,19 @@ async function requestWithRetry<T>(
 }
 
 export async function getText(url: string, config?: AxiosRequestOptions): Promise<string> {
-  return requestWithRetry<string>({ url, method: 'GET', responseType: 'text', ...config });
+  const { retries = DEFAULT_RETRIES, ...requestConfig } = config ?? {};
+  return requestWithRetry<string>(
+    { url, method: 'GET', responseType: 'text', ...requestConfig },
+    retries,
+  );
 }
 
 export async function getJson<T>(url: string, config?: AxiosRequestOptions): Promise<T> {
-  return requestWithRetry<T>({ url, method: 'GET', responseType: 'json', ...config });
+  const { retries = DEFAULT_RETRIES, ...requestConfig } = config ?? {};
+  return requestWithRetry<T>(
+    { url, method: 'GET', responseType: 'json', ...requestConfig },
+    retries,
+  );
 }
 
 export async function postJson<T>(
@@ -88,7 +98,11 @@ export async function postJson<T>(
   data: unknown,
   config?: AxiosRequestOptions,
 ): Promise<T> {
-  return requestWithRetry<T>({ url, method: 'POST', data, responseType: 'json', ...config });
+  const { retries = DEFAULT_RETRIES, ...requestConfig } = config ?? {};
+  return requestWithRetry<T>(
+    { url, method: 'POST', data, responseType: 'json', ...requestConfig },
+    retries,
+  );
 }
 
 export { http, requestWithRetry };

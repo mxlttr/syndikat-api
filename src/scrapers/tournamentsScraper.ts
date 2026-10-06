@@ -15,8 +15,9 @@ import type {
 } from '../types.js';
 
 const isProduction = env.NODE_ENV === 'production';
-const ON_TOUR_CACHE_KEY = 'tournaments:on-tour:v2';
+const ON_TOUR_CACHE_KEY = 'tournaments:on-tour:v3';
 const ON_TOUR_CONCURRENCY = 5;
+const ON_TOUR_PLAYER_LIST_TIMEOUT_MS = 5_000;
 
 export function getTournaments<T>(type: string, callback: () => Promise<T>) {
   return async (_: Request, res: Response, next: NextFunction) => {
@@ -174,13 +175,22 @@ function playerListUrl(eventId: number) {
 
 const onTourScraperDependencies: OnTourScraperDependencies = {
   getTournamentIndex: async () => (await getOfficialTournaments()).officialTournaments,
-  getPlayerList: (tournament) => getText(playerListUrl(tournament.event_id)),
+  getPlayerList: (tournament) =>
+    getText(playerListUrl(tournament.event_id), {
+      timeout: ON_TOUR_PLAYER_LIST_TIMEOUT_MS,
+      retries: 0,
+    }),
   warn: (message: string) => logger.warn(message),
 };
 
 function playersFromTournamentList(tournamentData: string): TournamentPlayer[] {
   const $ = load(tournamentData);
-  return ['starterlist', 'waitinglist'].flatMap((tableId) => {
+  const tables = ['starterlist', 'waitinglist'].filter((tableId) => $(`#${tableId}`).length > 0);
+  if (tables.length === 0) {
+    throw new Error('Official tournament player-list markup is unavailable');
+  }
+
+  return tables.flatMap((tableId) => {
     const table = $(`#${tableId}`);
     const headers = table
       .find('thead th')
