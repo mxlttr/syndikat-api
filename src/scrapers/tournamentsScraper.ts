@@ -169,7 +169,7 @@ export interface OnTourScraperDependencies {
 }
 
 function playerListUrl(eventId: number) {
-  return `${env.OFFICIAL_URL}?p=events&sp=list-players&id=${eventId}`;
+  return `${env.OFFICIAL_URL}?id=${eventId}&sp=list-players`;
 }
 
 const onTourScraperDependencies: OnTourScraperDependencies = {
