@@ -1,6 +1,9 @@
 type LogContext = Record<string, unknown>;
 
+import { captureErrorLog } from './services/sentryService';
+
 function write(level: 'info' | 'warn' | 'error', message: string, context?: LogContext) {
+  if (level === 'error') captureErrorLog(message);
   const entry = { level, message, ...(context ?? {}), timestamp: new Date().toISOString() };
   if (process.env.NODE_ENV === 'production') {
     process.stdout.write(`${JSON.stringify(entry)}\n`);

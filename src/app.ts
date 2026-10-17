@@ -16,6 +16,7 @@ import scoresRouter from './routes/scoresRouter';
 import stripeRouter from './routes/stripeRouter';
 import tournamentsRouter from './routes/tournamentsRouter';
 import trainingRouter from './routes/trainingRouter';
+import { installExpressErrorHandler } from './services/sentryService';
 
 const app = express();
 // Coolify's reverse proxy forwards the client address in X-Forwarded-For.
@@ -106,6 +107,8 @@ app.use('/out', outboundRouter);
 app.use('/stripe-webhook', stripeRouter);
 app.use('/training', trainingRouter);
 app.use('/players', playersRouter);
+
+installExpressErrorHandler(app);
 
 app.use((err: Error & { status?: number }, _: Request, res: Response, __: NextFunction) => {
   logger.error('Unhandled request error', { error: err.stack, requestId: res.locals.requestId });
