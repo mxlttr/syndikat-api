@@ -44,7 +44,7 @@ export async function scrapeScores(id: string) {
     );
     return games.filter(Boolean);
   } catch (error) {
-    logger.error('Scores scrape failed', { error: String(error) });
+    logger.error('Scores scrape failed', { error });
   }
 
   return [];
@@ -67,7 +67,7 @@ export async function scrapeUltiorganizer() {
       });
     });
   } catch (error) {
-    logger.error('Ultiorganizer scores scrape failed', { error: String(error) });
+    logger.error('Ultiorganizer scores scrape failed', { error });
   }
 
   return data ?? [];

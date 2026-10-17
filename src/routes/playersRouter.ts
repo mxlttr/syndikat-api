@@ -17,12 +17,12 @@ router.get('/:id', async (req, res) => {
     const data = await getPlayer(id);
     if (!analyticsOptedOut(req)) {
       void trackPlayerLoaded(Number(id)).catch((error) => {
-        logger.warn('Player analytics failed', { error: String(error), gtNumber: Number(id) });
+        logger.warn('Player analytics failed', { error, gtNumber: Number(id) });
       });
     }
     res.json(data);
   } catch (error) {
-    logger.error('Player request failed', { error: String(error) });
+    logger.error('Player request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });

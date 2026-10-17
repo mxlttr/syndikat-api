@@ -9,7 +9,7 @@ router.get('/', async (_, res) => {
     const data = await scrapeUltiorganizer();
     res.json(data);
   } catch (error) {
-    logger.error('Scores request failed', { error: String(error) });
+    logger.error('Scores request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });
@@ -21,7 +21,7 @@ router.get('/:id', async (req, res) => {
     const data = await scrapeScores(id);
     res.json(data);
   } catch (error) {
-    logger.error('Ultiorganizer scores request failed', { error: String(error) });
+    logger.error('Ultiorganizer scores request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });

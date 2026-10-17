@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias",
-    "start": "node dist/server.js",
+    "start": "node --enable-source-maps dist/server.js",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:coverage": "node --import tsx --test --experimental-test-coverage tests/*.test.ts",
     "check": "npm test && npm run build && npm run biome:check && npm run openapi:lint",

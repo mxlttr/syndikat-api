@@ -42,7 +42,7 @@ router.get('/:shopId/*path', (req, res) => {
         logger.warn('Product click analytics failed', {
           ...clickContext,
           analytics: 'failed',
-          error: String(error),
+          error,
         });
       });
   }

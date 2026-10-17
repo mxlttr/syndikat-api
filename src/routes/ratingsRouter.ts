@@ -75,7 +75,7 @@ router.get<{ club?: string }>(['/', '/:club'], async (req, res) => {
       divisions,
     });
   } catch (error) {
-    logger.error('Ratings request failed', { error: String(error) });
+    logger.error('Ratings request failed', { error });
     if (!analyticsOptedOut(req)) void trackRatingsEvent('ratings_load_error').catch(() => {});
     res.status(500).json({ message: 'An error occured' });
   }

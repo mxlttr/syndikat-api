@@ -22,7 +22,7 @@ router.get('/feed', async (_, res) => {
     const data = await handleCache('product-feed', 'all');
     res.json(data);
   } catch (error) {
-    logger.error('Product feed request failed', { error: String(error) });
+    logger.error('Product feed request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });
@@ -33,7 +33,7 @@ router.get('/search-stream/:query', async (req, res) => {
 
   if (!analyticsOptedOut(req)) {
     void trackProductSearch(query).catch((error) => {
-      logger.warn('Product search analytics failed', { error: String(error), query });
+      logger.warn('Product search analytics failed', { error, query });
     });
   }
 
@@ -81,7 +81,7 @@ router.get('/search-stream/:query', async (req, res) => {
           return { store: shop.title, count: 0, ok: false, aborted: true };
         }
 
-        logger.error(`Error fetching products for ${shop.title}`, { error: String(error) });
+        logger.error(`Error fetching products for ${shop.title}`, { error });
 
         if (!connectionClosed) {
           writeSseEvent(res, 'store-error', {
@@ -100,7 +100,7 @@ router.get('/search-stream/:query', async (req, res) => {
     if (!analyticsOptedOut(req)) {
       void trackProductSearchCompleted(query, totalProducts).catch((error) => {
         logger.warn('Product search completion analytics failed', {
-          error: String(error),
+          error,
           query,
           productCount: totalProducts,
         });
@@ -108,7 +108,7 @@ router.get('/search-stream/:query', async (req, res) => {
       if (totalProducts === 0) {
         void trackProductSearchNoResults(query).catch((error) => {
           logger.warn('Product search no-results analytics failed', {
-            error: String(error),
+            error,
             query,
           });
         });
@@ -128,7 +128,7 @@ router.get('/search-stream/:query', async (req, res) => {
       res.end();
     }
   } catch (error) {
-    logger.error('Unexpected error in product search stream', { error: String(error) });
+    logger.error('Unexpected error in product search stream', { error });
     if (!connectionClosed && !res.writableEnded) {
       writeSseEvent(res, 'error', {
         message: 'Unexpected stream error',
@@ -145,7 +145,7 @@ router.get('/:type/:query', async (req, res) => {
     const data = await handleCache(type, query);
     res.json(data);
   } catch (error) {
-    logger.error('Product request failed', { error: String(error) });
+    logger.error('Product request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });

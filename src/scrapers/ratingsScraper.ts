@@ -57,7 +57,7 @@ async function scrapeRatings(): Promise<Rating[]> {
 
     return ratings.filter(Boolean);
   } catch (error) {
-    logger.error('Ratings scrape failed', { error: String(error) });
+    logger.error('Ratings scrape failed', { error });
     throw new Error('Unable to retrieve ratings');
   }
 }

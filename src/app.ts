@@ -111,7 +111,11 @@ app.use('/players', playersRouter);
 installExpressErrorHandler(app);
 
 app.use((err: Error & { status?: number }, _: Request, res: Response, __: NextFunction) => {
-  logger.error('Unhandled request error', { error: err.stack, requestId: res.locals.requestId });
+  logger.error(
+    'Unhandled request error',
+    { error: err, requestId: res.locals.requestId },
+    { captureSentry: false },
+  );
   res.status(err.status ?? 500).send({ message: err.message, requestId: res.locals.requestId });
 });
 

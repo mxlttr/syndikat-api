@@ -26,9 +26,12 @@ Configuration names are documented here only; values, tokens, passwords, and pro
 The environment schema currently expects the listed source configuration fields to be present. Training signup endpoints additionally require a database URL, a session secret of at least 32 characters, and a signup password; otherwise they return `503`.
 
 Set `SENTRY_DSN` to the DSN for the Sentry Node.js project to enable server error
-reporting. Leave it unset to disable Sentry. Error-level application logs and
-unhandled Express errors are sent with the `NODE_ENV` value as their Sentry
-environment. Request bodies, cookies, and authorization headers are not sent.
+reporting. Leave it unset to disable Sentry. Error-level application logs capture
+the original exception when a caught error is available, including its stack, and
+unhandled Express errors are captured by the Express integration. Events use the
+`NODE_ENV` value as their Sentry environment. Request bodies, cookies, headers,
+query strings, and log extras are not sent. Production stack traces map to the
+original TypeScript source files.
 
 ## Dependencies and checks
 

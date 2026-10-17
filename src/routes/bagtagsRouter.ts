@@ -23,13 +23,15 @@ router.get('/', async (_, res) => {
     const body = await getJson<unknown>(env.BAGTAG_ENDPOINT);
     const parsed = bagTagSchema.safeParse(body);
     if (!parsed.success) {
-      logger.error('Bag-tag endpoint returned an invalid payload', { error: parsed.error });
+      logger.error('Bag-tag endpoint returned an invalid payload', {
+        error: parsed.error.message,
+      });
       res.status(500).json({ message: 'Bag-tag endpoint returned an invalid payload' });
       return;
     }
     res.json(parsed.data);
   } catch (error) {
-    logger.error('Bag-tag request failed', { error: String(error) });
+    logger.error('Bag-tag request failed', { error });
     res.status(500).json({ message: 'An error occured' });
   }
 });

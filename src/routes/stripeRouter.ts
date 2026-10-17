@@ -37,15 +37,15 @@ router.post(
     try {
       event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
     } catch (err) {
-      logger.error('Stripe webhook signature validation failed', { error: String(err) });
+      logger.error('Stripe webhook signature validation failed', { error: err });
       response.status(400).end();
       return;
     }
 
     try {
       await trackMembershipConversion(event);
-    } catch {
-      logger.error('Membership analytics delivery failed; Stripe should retry');
+    } catch (error) {
+      logger.error('Membership analytics delivery failed; Stripe should retry', { error });
       response.sendStatus(503);
       return;
     }
@@ -80,7 +80,7 @@ async function triggerDiscordNotification(intent: Stripe.PaymentIntent) {
   try {
     await postJson(url, data);
   } catch (error) {
-    logger.error('Membership analytics request failed', { error: String(error) });
+    logger.error('Membership analytics request failed', { error });
   }
 }
 

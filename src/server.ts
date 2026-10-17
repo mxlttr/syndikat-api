@@ -21,7 +21,7 @@ const databaseStartupDependencies: DatabaseStartupDependencies = {
   runMigrations: () => runDatabaseMigrations(databasePool()),
   setAvailable: setDatabaseAvailable,
   nodeEnv: env.NODE_ENV,
-  warn: (message, error) => logger.warn(message, { error: String(error) }),
+  warn: (message, error) => logger.warn(message, { error }),
 };
 
 export async function prepareDatabaseForStartup(
@@ -55,7 +55,7 @@ function registerShutdown(server: Server) {
     logger.info(`Received ${signal}; shutting down`);
     server.close(async (error) => {
       if (error) {
-        logger.error('HTTP server shutdown failed', { error: String(error) });
+        logger.error('HTTP server shutdown failed', { error });
         process.exitCode = 1;
       }
       await Promise.allSettled([closeCache(), closeDatabase()]);
@@ -68,7 +68,7 @@ function registerShutdown(server: Server) {
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   start().catch((error: unknown) => {
-    logger.error('API failed to start', { error: String(error) });
+    logger.error('API failed to start', { error });
     process.exit(1);
   });
 }
