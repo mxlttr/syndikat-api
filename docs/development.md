@@ -35,7 +35,7 @@ original TypeScript source files.
 
 ## Dependencies and checks
 
-`GET /ratings` returns paginated ratings when called with `page` and `pageSize` (or any filter parameter), for example `/ratings?club=Syndikat&page=1&pageSize=50`. It supports case-insensitive `club` and `search` filters plus an exact `division` filter. The response contains `items`, `total`, `page`, `pageSize`, and `divisions`. `GET /ratings/{club}` remains available for the unpaginated club-filtered array response. Club matching uses normalized whitespace and equivalent Disc Golf/Discgolf/Disc-Golf/DG spellings; original rankings and division counts are preserved.
+`GET /ratings` returns paginated ratings when called with `page` and `pageSize` (or any filter parameter), for example `/ratings?club=Syndikat&page=1&pageSize=50`. It supports case-insensitive `club` and `search` filters plus an exact `division` filter. Comma-separated club values are alternatives (OR), for example `/ratings?club=Köln,Syndikat` matches either club substring. The response contains `items`, `total`, `page`, `pageSize`, and `divisions`. `GET /ratings/{club}` remains available for the unpaginated club-filtered array response. Club matching uses normalized whitespace and equivalent Disc Golf/Discgolf/Disc-Golf/DG spellings; original rankings and division counts are preserved.
 
 - Redis is optional outside production. It enables response caching and contributes to health status.
 - PostgreSQL is optional unless training signup or membership analytics is enabled. Startup applies pending migrations automatically.

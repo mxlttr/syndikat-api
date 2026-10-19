@@ -9,8 +9,12 @@ function normalizeClub(club: string) {
 }
 
 export function filterRatingsByClub(ratings: Rating[], club?: string): Rating[] {
-  const filter = normalizeClub(club ?? '');
-  return filter ? ratings.filter((rating) => normalizeClub(rating.club).includes(filter)) : ratings;
+  const filters = (club ?? '').split(',').map(normalizeClub).filter(Boolean);
+  return filters.length
+    ? ratings.filter((rating) =>
+        filters.some((filter) => normalizeClub(rating.club).includes(filter)),
+      )
+    : ratings;
 }
 
 function normalizeSearch(value: string) {

@@ -30,6 +30,14 @@ test('club filter accepts full names, abbreviations, case, and whitespace', () =
   );
 });
 
+test('club filter accepts comma-separated alternatives', () => {
+  assert.deepEqual(filterRatingsByClub(ratings, 'Köln, Syndikat'), [ratings[0]]);
+  assert.deepEqual(
+    filterRatingsByClub([...ratings, { ...ratings[1], club: 'Disc Golf Köln' }], 'Köln, Syndikat'),
+    [ratings[0], { ...ratings[1], club: 'Disc Golf Köln' }],
+  );
+});
+
 test('unknown clubs return no ratings without changing the source list', () => {
   assert.deepEqual(filterRatingsByClub(ratings, 'unknown'), []);
   assert.equal(ratings.length, 3);

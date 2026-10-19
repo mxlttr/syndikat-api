@@ -85,7 +85,7 @@ paths:
       parameters:
         - name: club
           in: query
-          description: Case-insensitive club substring filter.
+          description: Case-insensitive club substring filter. Separate multiple alternatives with commas; a rating matches any alternative.
           schema: { type: string }
         - name: division
           in: query

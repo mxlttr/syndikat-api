@@ -32,3 +32,5 @@ npm start
 ```
 
 When changing a browser-consumed route, update `docs/openapi.yaml` and the corresponding usage in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web) in the same review.
+
+The paginated `GET /ratings` endpoint accepts comma-separated `club` alternatives, matching a rating when its club name contains any supplied substring.
