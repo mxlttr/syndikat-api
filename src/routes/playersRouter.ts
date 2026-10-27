@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { logger } from '../logger';
 import { getPlayer } from '../scrapers/playersScaper';
-import { analyticsOptedOut, trackPlayerLoaded } from '../services/analyticsService';
 
 const router = Router();
 
@@ -15,11 +14,6 @@ router.get('/:id', async (req, res) => {
 
   try {
     const data = await getPlayer(id);
-    if (!analyticsOptedOut(req)) {
-      void trackPlayerLoaded(Number(id)).catch((error) => {
-        logger.warn('Player analytics failed', { error, gtNumber: Number(id) });
-      });
-    }
     res.json(data);
   } catch (error) {
     logger.error('Player request failed', { error });

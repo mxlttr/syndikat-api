@@ -54,37 +54,12 @@ export function trackProductClick(
   return trackEvent('product_click', path, { shop, path }, send);
 }
 
-export function trackProductSearch(query: string, send: typeof postJson = postJson) {
-  return trackEvent('product_search', '/products/search-stream', { query }, send);
-}
-
-export function trackProductSearchCompleted(
-  query: string,
-  productCount: number,
-  send: typeof postJson = postJson,
-) {
-  return trackEvent(
-    'product_search_completed',
-    '/products/search-stream',
-    { query, product_count: productCount },
-    send,
-  );
-}
-
-export function trackProductSearchNoResults(query: string, send: typeof postJson = postJson) {
-  return trackEvent('product_search_no_results', '/products/search-stream', { query }, send);
-}
-
 export function trackRatingsEvent(
   name: string,
   data: Record<string, unknown> = {},
   send: typeof postJson = postJson,
 ) {
   return trackEvent(name, '/ratings', data, send);
-}
-
-export function trackPlayerLoaded(gtNumber: number, send: typeof postJson = postJson) {
-  return trackEvent('player_loaded', `/players/${gtNumber}`, { gt_number: gtNumber }, send);
 }
 
 export function trackTrainingSignup(send: typeof postJson = postJson) {

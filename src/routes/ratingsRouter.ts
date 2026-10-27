@@ -36,7 +36,6 @@ router.get<{ club?: string }>(['/', '/:club'], async (req, res) => {
     if (!hasPagination) {
       const items = filterRatingsByClub(data, req.params.club);
       if (!optedOut) {
-        void trackRatingsEvent('ratings_loaded', { resultCount: items.length }).catch(() => {});
         if (!items.length)
           void trackRatingsEvent('ratings_no_results', { query: search, division, club }).catch(
             () => {},
@@ -61,7 +60,6 @@ router.get<{ club?: string }>(['/', '/:club'], async (req, res) => {
       a.localeCompare(b, 'de', { numeric: true }),
     );
     if (!optedOut) {
-      void trackRatingsEvent('ratings_loaded', { resultCount: filtered.length }).catch(() => {});
       if (!filtered.length)
         void trackRatingsEvent('ratings_no_results', { query: search, division, club }).catch(
           () => {},

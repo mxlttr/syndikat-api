@@ -29,11 +29,7 @@ process.env.DATABASE_URL = 'https://example.test/database';
 const {
   analyticsOptedOut,
   trackProductClick,
-  trackProductSearch,
-  trackProductSearchCompleted,
-  trackProductSearchNoResults,
   trackRatingsEvent,
-  trackPlayerLoaded,
   trackTrainingSignup,
   assertAnalyticsAccepted,
 } = await import('../src/services/analyticsService');
@@ -54,11 +50,7 @@ test('analytics helpers send the expected Umami event payloads', async () => {
     await trackProductClick('itc', new URL('https://shop.test/products/disc'), send),
     true,
   );
-  assert.equal(await trackProductSearch('Buzzz', send), true);
-  assert.equal(await trackProductSearchCompleted('Buzzz', 3, send), true);
-  assert.equal(await trackProductSearchNoResults('Nothing', send), true);
   assert.equal(await trackRatingsEvent('ratings_no_results', { query: 'x' }, send), true);
-  assert.equal(await trackPlayerLoaded(12345, send), true);
   assert.equal(await trackTrainingSignup(send), true);
 
   assert.deepEqual(
@@ -68,11 +60,7 @@ test('analytics helpers send the expected Umami event payloads', async () => {
     })),
     [
       { name: 'product_click', data: { shop: 'itc', path: '/products/disc' } },
-      { name: 'product_search', data: { query: 'Buzzz' } },
-      { name: 'product_search_completed', data: { query: 'Buzzz', product_count: 3 } },
-      { name: 'product_search_no_results', data: { query: 'Nothing' } },
       { name: 'ratings_no_results', data: { query: 'x' } },
-      { name: 'player_loaded', data: { gt_number: 12345 } },
       { name: 'training_signup_completed', data: {} },
     ],
   );
@@ -95,13 +83,19 @@ test('analytics helpers report disabled configuration and propagate delivery fai
     hostname: env.UMAMI_HOSTNAME,
   };
   env.UMAMI_SEND_URL = undefined;
-  assert.equal(await trackProductSearch('query', send), false);
+  assert.equal(
+    await trackProductClick('itc', new URL('https://shop.test/products/disc'), send),
+    false,
+  );
   env.UMAMI_SEND_URL = original.url;
 
   const failingSend = (async () => {
     throw new Error('Umami unavailable');
   }) as typeof postJson;
-  await assert.rejects(trackProductSearch('query', failingSend), /Umami unavailable/);
+  await assert.rejects(
+    trackProductClick('itc', new URL('https://shop.test/products/disc'), failingSend),
+    /Umami unavailable/,
+  );
   env.UMAMI_WEBSITE_ID = original.website;
   env.UMAMI_HOSTNAME = original.hostname;
 });
