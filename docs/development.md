@@ -55,11 +55,15 @@ PostgreSQL is needed for training signups and Redis is used for production cachi
 Local service provisioning is intentionally not automated yet; keep service data
 outside the repository and configure the API with the environment variables above.
 
-The product feed caches complete Shopify refreshes only. A failed store request starts a
-short cooldown (at least 60 seconds, or the store's longer `Retry-After` value up to
-15 minutes). During the cooldown, the API serves the last complete feed for up to
-24 hours. If there is no complete cached feed, it returns the available partial
-products and caches them only for the cooldown, or HTTP 503 when every store fails.
+The product feed caches complete Shopify refreshes, including empty successful results,
+for `CACHE_EXPIRY` seconds (8 hours when set to `28800`). A failed store request starts
+a cooldown of 15 minutes, doubling after each failed refresh up to 8 hours. A longer
+`Retry-After` value takes precedence. During the cooldown, the API serves the last
+complete feed for up to 24 hours. If there is no complete cached feed, it returns
+available partial products and caches them only for the cooldown, or HTTP 503 when
+every store fails. A complete refresh resets the failure streak. Simultaneous requests
+in the same API process share one refresh. Rate-limit logs identify the shop and
+record upstream `Retry-After` and `x-request-id` headers when present.
 
 For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web).
 

@@ -255,7 +255,7 @@ paths:
     get:
       tags: [Products]
       summary: Return recent products from supported Shopify feeds
-      description: Returns recent products from every supported Shopify feed. A complete result is cached; when a store is temporarily unavailable, the last complete result may be returned. Without a previous complete result, an available partial result may be returned.
+      description: Returns recent products from every supported Shopify feed. A complete result, including an empty list, is cached for the configured cache lifetime. When a store is temporarily unavailable, refresh attempts use exponential backoff and the last complete result may be returned. Without a previous complete result, an available partial result may be returned.
       operationId: getProductFeed
       responses:
         '200':

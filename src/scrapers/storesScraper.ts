@@ -138,19 +138,23 @@ interface ProductFeedScrape {
   cooldownSeconds: number;
 }
 
+const FEED_BACKOFF_BASE_SECONDS = 15 * 60;
+const FEED_BACKOFF_MAX_SECONDS = 8 * 60 * 60;
+const FEED_FAILURE_STREAK_TTL_SECONDS = 24 * 60 * 60;
+
 function retryAfterSeconds(error: unknown): number {
   const response = (
     error as {
       response?: { status?: number; headers?: Record<string, string> };
     }
   )?.response;
-  if (response?.status !== 429) return 60;
+  if (response?.status !== 429) return 0;
 
   const retryAfter = response.headers?.['retry-after'];
-  if (!retryAfter) return 60;
+  if (!retryAfter) return 0;
   const seconds = Number(retryAfter);
   const delay = Number.isFinite(seconds) ? seconds : (Date.parse(retryAfter) - Date.now()) / 1000;
-  return Number.isFinite(delay) ? Math.min(900, Math.max(60, Math.ceil(delay))) : 60;
+  return Number.isFinite(delay) ? Math.min(24 * 60 * 60, Math.max(0, Math.ceil(delay))) : 0;
 }
 
 async function getShopifyProductFeeds(options: ScrapeOptions = {}): Promise<ProductFeedScrape> {
@@ -201,7 +205,20 @@ async function getShopifyProductFeeds(options: ScrapeOptions = {}): Promise<Prod
     } catch (err) {
       if (isAbortError(err)) throw err;
       cooldownSeconds = Math.max(cooldownSeconds, retryAfterSeconds(err));
-      logger.error('Error fetching product feed', { error: err });
+      const response = (
+        err as {
+          response?: { status?: number; headers?: Record<string, string> };
+        }
+      )?.response;
+      if (response?.status === 429) {
+        logger.warn('Shopify product feed rate limited', {
+          shop: shop.id,
+          retryAfter: response.headers?.['retry-after'],
+          requestId: response.headers?.['x-request-id'],
+        });
+      } else {
+        logger.error('Error fetching product feed', { shop: shop.id, error: err });
+      }
     }
   }
   return {
@@ -227,7 +244,20 @@ interface ProductFeedOptions extends ScrapeOptions {
   scrape?: (options: ScrapeOptions) => Promise<ProductFeedScrape>;
 }
 
+let inFlightProductFeed: Promise<DefaultProduct[]> | null = null;
+
 export async function getProductFeed(options: ProductFeedOptions = {}): Promise<DefaultProduct[]> {
+  if (inFlightProductFeed) return inFlightProductFeed;
+  const refresh = loadProductFeed(options);
+  inFlightProductFeed = refresh;
+  try {
+    return await refresh;
+  } finally {
+    if (inFlightProductFeed === refresh) inFlightProductFeed = null;
+  }
+}
+
+async function loadProductFeed(options: ProductFeedOptions): Promise<DefaultProduct[]> {
   const {
     signal,
     production = env.NODE_ENV === 'production',
@@ -239,6 +269,7 @@ export async function getProductFeed(options: ProductFeedOptions = {}): Promise<
   const lastGoodKey = `${cacheKey}-last-good`;
   const cooldownKey = `${cacheKey}-cooldown`;
   const partialKey = `${cacheKey}-partial`;
+  const failureStreakKey = `${cacheKey}-failure-streak`;
 
   if (production) {
     const fresh = (await getCached(cacheKey)) as DefaultProduct[] | null;
@@ -257,12 +288,23 @@ export async function getProductFeed(options: ProductFeedOptions = {}): Promise<
     if (production) {
       await setCached(cacheKey, result.products);
       await setCached(lastGoodKey, result.products, 24 * 60 * 60);
+      await setCached(failureStreakKey, 0, 1);
     }
     return result.products;
   }
 
   if (production) {
-    const cooldownSeconds = result.cooldownSeconds || 60;
+    const previousFailures = Number(await getCached(failureStreakKey));
+    const failureStreak =
+      Number.isInteger(previousFailures) && previousFailures > 0
+        ? Math.min(previousFailures + 1, 10)
+        : 1;
+    const backoffSeconds = Math.min(
+      FEED_BACKOFF_MAX_SECONDS,
+      FEED_BACKOFF_BASE_SECONDS * 2 ** (failureStreak - 1),
+    );
+    const cooldownSeconds = Math.max(result.cooldownSeconds, backoffSeconds);
+    await setCached(failureStreakKey, failureStreak, FEED_FAILURE_STREAK_TTL_SECONDS);
     await setCached(cooldownKey, true, cooldownSeconds);
     const lastGood = (await getCached(lastGoodKey)) as DefaultProduct[] | null;
     if (lastGood) return lastGood;
