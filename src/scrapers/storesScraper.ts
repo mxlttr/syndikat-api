@@ -106,8 +106,6 @@ function parseJsonLdProduct(html: string): JsonLdProduct | null {
 async function scrapeStores(type: string, query: string, options: ScrapeOptions = {}) {
   const { signal } = options;
   switch (type) {
-    case 'product-feed':
-      return getShopifyProductFeeds({ signal });
     case 'discgolfstore':
       return scrapeDGStore(query, { signal });
     case 'thrownatur':
@@ -133,20 +131,48 @@ async function scrapeStores(type: string, query: string, options: ScrapeOptions 
   }
 }
 
-async function getShopifyProductFeeds(options: ScrapeOptions = {}) {
+interface ProductFeedScrape {
+  products: DefaultProduct[];
+  complete: boolean;
+  successfulStores: number;
+  cooldownSeconds: number;
+}
+
+function retryAfterSeconds(error: unknown): number {
+  const response = (
+    error as {
+      response?: { status?: number; headers?: Record<string, string> };
+    }
+  )?.response;
+  if (response?.status !== 429) return 60;
+
+  const retryAfter = response.headers?.['retry-after'];
+  if (!retryAfter) return 60;
+  const seconds = Number(retryAfter);
+  const delay = Number.isFinite(seconds) ? seconds : (Date.parse(retryAfter) - Date.now()) / 1000;
+  return Number.isFinite(delay) ? Math.min(900, Math.max(60, Math.ceil(delay))) : 60;
+}
+
+async function getShopifyProductFeeds(options: ScrapeOptions = {}): Promise<ProductFeedScrape> {
   const { signal } = options;
   const feedShops = Object.values(shops).filter(
     (shop) => shop.shopSystem === 'shopify' && shop.feed,
   );
 
-  const allProducts = [];
+  const allProducts: DefaultProduct[] = [];
+  let successfulStores = 0;
+  let cooldownSeconds = 0;
   for (const shop of feedShops) {
     const shopFeed = shop.feed;
     if (!shop || !shopFeed) continue;
     try {
       throwIfAborted(signal);
       const baseURL = new URL(shopFeed).origin;
-      const data = await getJson<{ products: ShopifyProduct[] }>(shopFeed, { signal });
+      const data = await getJson<{ products: ShopifyProduct[] }>(shopFeed, {
+        signal,
+        retries: 0,
+      });
+      if (!Array.isArray(data.products)) throw new Error('Invalid Shopify product feed');
       const products = data.products
         .filter((product) => {
           const createdAt = new Date(product.created_at);
@@ -171,14 +197,81 @@ async function getShopifyProductFeeds(options: ScrapeOptions = {}) {
         );
 
       allProducts.push(...products.map(normalizeProduct));
+      successfulStores += 1;
     } catch (err) {
       if (isAbortError(err)) throw err;
+      cooldownSeconds = Math.max(cooldownSeconds, retryAfterSeconds(err));
       logger.error('Error fetching product feed', { error: err });
     }
   }
-  return allProducts.sort(
-    (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
-  );
+  return {
+    products: allProducts.sort(
+      (a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime(),
+    ),
+    complete: successfulStores === feedShops.length,
+    successfulStores,
+    cooldownSeconds,
+  };
+}
+
+export class ProductFeedUnavailableError extends Error {
+  constructor() {
+    super('Product feed is temporarily unavailable');
+  }
+}
+
+interface ProductFeedOptions extends ScrapeOptions {
+  production?: boolean;
+  getCached?: (key: string) => Promise<unknown>;
+  setCached?: (key: string, value: unknown, expiry?: number) => Promise<void>;
+  scrape?: (options: ScrapeOptions) => Promise<ProductFeedScrape>;
+}
+
+export async function getProductFeed(options: ProductFeedOptions = {}): Promise<DefaultProduct[]> {
+  const {
+    signal,
+    production = env.NODE_ENV === 'production',
+    getCached = getCache,
+    setCached = setCache,
+    scrape = getShopifyProductFeeds,
+  } = options;
+  const cacheKey = 'product-feed-v2-all';
+  const lastGoodKey = `${cacheKey}-last-good`;
+  const cooldownKey = `${cacheKey}-cooldown`;
+  const partialKey = `${cacheKey}-partial`;
+
+  if (production) {
+    const fresh = (await getCached(cacheKey)) as DefaultProduct[] | null;
+    if (fresh) return fresh;
+    if (await getCached(cooldownKey)) {
+      const lastGood = (await getCached(lastGoodKey)) as DefaultProduct[] | null;
+      if (lastGood) return lastGood;
+      const partial = (await getCached(partialKey)) as DefaultProduct[] | null;
+      if (partial) return partial;
+      throw new ProductFeedUnavailableError();
+    }
+  }
+
+  const result = await scrape({ signal });
+  if (result.complete) {
+    if (production) {
+      await setCached(cacheKey, result.products);
+      await setCached(lastGoodKey, result.products, 24 * 60 * 60);
+    }
+    return result.products;
+  }
+
+  if (production) {
+    const cooldownSeconds = result.cooldownSeconds || 60;
+    await setCached(cooldownKey, true, cooldownSeconds);
+    const lastGood = (await getCached(lastGoodKey)) as DefaultProduct[] | null;
+    if (lastGood) return lastGood;
+    if (result.successfulStores > 0) {
+      await setCached(partialKey, result.products, cooldownSeconds);
+    }
+  }
+  if (result.successfulStores > 0) return result.products;
+  throw new ProductFeedUnavailableError();
 }
 
 function filterProducts(products: DefaultProduct[], query: string) {

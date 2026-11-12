@@ -55,6 +55,12 @@ PostgreSQL is needed for training signups and Redis is used for production cachi
 Local service provisioning is intentionally not automated yet; keep service data
 outside the repository and configure the API with the environment variables above.
 
+The product feed caches complete Shopify refreshes only. A failed store request starts a
+short cooldown (at least 60 seconds, or the store's longer `Retry-After` value up to
+15 minutes). During the cooldown, the API serves the last complete feed for up to
+24 hours. If there is no complete cached feed, it returns the available partial
+products and caches them only for the cooldown, or HTTP 503 when every store fails.
+
 For any API change, compare the affected route with `docs/openapi.yaml` and test its browser integration in [mxlttr/syndikat-web](https://github.com/mxlttr/syndikat-web).
 
 The `/tournaments/on-tour` response includes Syndikat players from both the starter and waiting lists. Each `our_players` entry includes `waitlisted` (boolean); the website lists starters first and groups waiting-list players in parentheses, e.g. “Person 1, Person 2, (Person 3, Person 4)”. Individual official player-list failures are logged and omitted from an otherwise successful response; the production cache is updated only after a complete scrape.

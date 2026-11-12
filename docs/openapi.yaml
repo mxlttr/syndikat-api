@@ -255,7 +255,7 @@ paths:
     get:
       tags: [Products]
       summary: Return recent products from supported Shopify feeds
-      description: Returns recent products from every supported Shopify feed.
+      description: Returns recent products from every supported Shopify feed. A complete result is cached; when a store is temporarily unavailable, the last complete result may be returned. Without a previous complete result, an available partial result may be returned.
       operationId: getProductFeed
       responses:
         '200':
@@ -268,6 +268,12 @@ paths:
                   $ref: '#/components/schemas/Product'
         '500':
           $ref: '#/components/responses/ServerError'
+        '503':
+          description: No Shopify feed is available and no previous complete result is cached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteError'
   /out/{shopId}/{productPath}:
     get:
       tags: [Products]

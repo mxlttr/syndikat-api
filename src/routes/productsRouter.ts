@@ -1,7 +1,11 @@
 import { type Response, Router } from 'express';
 import { isAbortError } from '../http';
 import { logger } from '../logger';
-import { handleCache } from '../scrapers/storesScraper';
+import {
+  getProductFeed,
+  handleCache,
+  ProductFeedUnavailableError,
+} from '../scrapers/storesScraper';
 import shops from '../shopList';
 
 const router = Router();
@@ -13,11 +17,13 @@ function writeSseEvent(res: Response, event: string, data: unknown) {
 
 router.get('/feed', async (_, res) => {
   try {
-    const data = await handleCache('product-feed', 'all');
+    const data = await getProductFeed();
     res.json(data);
   } catch (error) {
     logger.error('Product feed request failed', { error });
-    res.status(500).json({ message: 'An error occured' });
+    res.status(error instanceof ProductFeedUnavailableError ? 503 : 500).json({
+      message: error instanceof ProductFeedUnavailableError ? error.message : 'An error occured',
+    });
   }
 });
 
