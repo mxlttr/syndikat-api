@@ -20,10 +20,13 @@ router.get('/feed', async (_, res) => {
     const data = await getProductFeed();
     res.json(data);
   } catch (error) {
+    if (error instanceof ProductFeedUnavailableError) {
+      logger.warn('Product feed temporarily unavailable');
+      res.status(503).json({ message: error.message });
+      return;
+    }
     logger.error('Product feed request failed', { error });
-    res.status(error instanceof ProductFeedUnavailableError ? 503 : 500).json({
-      message: error instanceof ProductFeedUnavailableError ? error.message : 'An error occured',
-    });
+    res.status(500).json({ message: 'An error occured' });
   }
 });
 
